@@ -62,7 +62,8 @@ for dataset, n_clusters in datasets:
 		
 		# Separa os dados em grupos
 		for c, data in y_.groupby(['Cluster']):
-
+			rmse = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
+			print('RMSE attr',atributos_names[attr]," cluster",c,' :', rmse)
 			error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'Erro'])
 			for out, values in data.groupby(atributos_names[attr]):
 				error.loc[error.shape[0],:] = [c,atributos_names[attr], out, values.mean(axis=0).Erro]
@@ -71,7 +72,10 @@ for dataset, n_clusters in datasets:
 			q = q[data.index]
 			attr_column = np.unique(q.sort_values().get_values())
 
-			print(error)
+			
+			a = input()
+
+
 			axesE[c-1].plot(attr_column, error.loc[:, 'Erro'], label='Erro real')
 			
 			erro_relativo = error.loc[:,'Erro'].get_values()
@@ -87,7 +91,7 @@ for dataset, n_clusters in datasets:
 			data = data[['Actual', 'Predicted', 'Erro']]			
 			data.plot(kind = 'bar', ax=axes[c-1], title=('Classe '+str(c)))'''
 			
-	plt.show()
+	#plt.show()
 		
 
 		
