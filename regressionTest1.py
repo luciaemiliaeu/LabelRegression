@@ -8,9 +8,11 @@ from sklearn.cluster import KMeans
 from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler 
+from sklearn.metrics import mean_squared_error
+from math import sqrt
 
 datasets = [("./databases/iris.csv",3)]
-#,("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
+#("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -28,9 +30,10 @@ for dataset, n_clusters in datasets:
 	
 	
 	for attr in range(cluster.shape[1]):
-		test_set = cluster.sample(frac=0.66)
+		test_set = cluster.sample(frac=0.15)
 		y_test = test_set.loc[:,cluster.columns[attr]].get_values()
 		X_test = test_set.drop(cluster.columns[[attr]], axis=1).get_values()
+
 
 		train_set = cluster.drop(test_set.index)
 		y_train = train_set.loc[:,cluster.columns[attr]].get_values()
@@ -59,40 +62,31 @@ for dataset, n_clusters in datasets:
 		
 		# Separa os dados em grupos
 		for c, data in y_.groupby(['Cluster']):
-			data = data.sort_values(by=atributos_names[attr])
-			erro_relativo = data.loc[:,'Erro']
-			
+
+			error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'Erro'])
+			for out, values in data.groupby(atributos_names[attr]):
+				error.loc[error.shape[0],:] = [c,atributos_names[attr], out, values.mean(axis=0).Erro]
+						
 			q = X.loc[:, atributos_names[attr]]
 			q = q[data.index]
-			attr_column = q.sort_values().get_values()
+			attr_column = np.unique(q.sort_values().get_values())
 
-			print(attr_column)
-			poli = np.polyfit(attr_column, erro_relativo, 4)
+			print(error)
+			axesE[c-1].plot(attr_column, error.loc[:, 'Erro'], label='Erro real')
+			
+			erro_relativo = error.loc[:,'Erro'].get_values()
+			poli = np.polyfit(attr_column.astype(float), erro_relativo.astype(float), 3)
+
 			xx = np.linspace(min(attr_column), max(attr_column))
-			axesE[c-1].plot(xx, np.polyval(poli, xx))
-			#axesE[c-1].set_xtickslabels(attr_column)
+			axesE[c-1].plot(xx, np.polyval(poli, xx), label='Apr. Poli.')
+			axesE[c-1].legend()
 			
+
 			'''
-			end = np.shape(attr_column)[0]
-			x = np.linspace(0, end, end, endpoint = True)
-			interpolacao_linear = interp1d(x, erro_relativo, kind='linear')
-			interpolacao_quadratic = interp1d(x, erro_relativo, kind='quadratic')
-			interpolacao_cubic = interp1d(x, erro_relativo, kind='cubic')
-			lin = interpolacao_linear(x)
-			qua = interpolacao_quadratic(x)
-			cub = interpolacao_cubic(x)
-
-			lines = axesE[c-1].plot(x, erro_relativo, x, lin, x, qua, x, cub , 'k--')
-			plt.setp(lines[0], color='b')
-			plt.setp(lines[1], color ='y')
-			plt.setp(lines[2], color = 'g')
-			plt.legend(('linear', 'quadratic', 'cubic'))'''
-
-			x = np.arange(min(attr_column), max(attr_column))
-			axesE[c-1].plot(attr_column, erro_relativo)
-			
+			data = data.sort_values(by=atributos_names[attr])
 			data = data[['Actual', 'Predicted', 'Erro']]			
-			data.plot(kind = 'bar', ax=axes[c-1], title=('Classe '+str(c)))
+			data.plot(kind = 'bar', ax=axes[c-1], title=('Classe '+str(c)))'''
+			
 	plt.show()
 		
 
