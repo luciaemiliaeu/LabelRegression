@@ -11,8 +11,36 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 
-datasets = [("./databases/t3.csv",3)]
-#("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
+datasets = [("./databases/iris.csv",3)]
+#("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3),("./databases/t3.csv",3)]
+
+def regression(X, Y):
+	test_set = X.sample(frac=0.33)
+	y_test = test_set.loc[:,X.columns[Y]].get_values()
+	X_test = test_set.drop(X.columns[[Y]], axis=1).get_values()
+
+
+	train_set = X.drop(test_set.index)
+	y_train = train_set.loc[:,X.columns[Y]].get_values()
+	X_train = train_set.drop(X.columns[[Y]], axis=1).get_values()
+	
+
+	# Treina o modelo de regressão 
+	svr_rbf = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=.1)
+	svr_rbf = svr_rbf.fit(X_train,y_train)
+	
+	# Testa com o set de treino e com a base toda
+	predicted_train = svr_rbf.predict(X_test)
+	predicted = svr_rbf.predict(X.drop(X.columns[[Y]], axis=1).get_values())
+
+	return svr_rbf, predicted_train, predicted
+
+def results(y, y_predicted, cluster, X):
+	# Dataframe : {y_real, y_Predicted, Classe, [attr]}
+	results = pd.DataFrame({'Actual': y , 'Predicted': y_predicted, 'Cluster': cluster})
+	results = results.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
+	results = results.join(X)
+
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -30,27 +58,8 @@ for dataset, n_clusters in datasets:
 	
 	
 	for attr in range(cluster.shape[1]):
-		test_set = cluster.sample(frac=0.33)
-		y_test = test_set.loc[:,cluster.columns[attr]].get_values()
-		X_test = test_set.drop(cluster.columns[[attr]], axis=1).get_values()
-
-
-		train_set = cluster.drop(test_set.index)
-		y_train = train_set.loc[:,cluster.columns[attr]].get_values()
-		X_train = train_set.drop(cluster.columns[[attr]], axis=1).get_values()
-		
-
-		# Treina o modelo de regressão 
-		svr_rbf = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=.1)
-		svr_rbf.fit(X_train,y_train)
-		predicted = svr_rbf.fit(X_train,y_train).predict(X_test)
-		
-		# Dataframe : {y_real, y_Predicted, Classe, [attr]}
-		clt = Y[test_set.index]
-		y_ = pd.DataFrame({'Actual': y_test, 'Predicted': predicted, 'Cluster': clt})
-		y_ = y_.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
-		y_.index = test_set.index
-		y_ = y_.join(test_set)
+		svr_rbf, predicted_train, predicted = regression(cluster, attr)
+		results = results(cluster.loc[:,cluster.columns[attr]].get_values(), predicted, Y, X)
 		
 		print()
 		#fig, axes = plt.subplots(nrows=np.unique(Y).shape[0], ncols=1)
@@ -61,10 +70,11 @@ for dataset, n_clusters in datasets:
 
 		
 		# Separa os dados em grupos
-		for c, data in y_.groupby(['Cluster']):
+		for c, data in results.groupby(['Cluster']):
 			rmse = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
 			print('RMSE attr',atributos_names[attr]," cluster",c,' :', rmse)
 			error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'Erro'])
+			
 			for out, values in data.groupby(atributos_names[attr]):
 				error.loc[error.shape[0],:] = [c,atributos_names[attr], out, values.mean(axis=0).Erro]
 						
@@ -72,8 +82,6 @@ for dataset, n_clusters in datasets:
 			q = q[data.index]
 			attr_column = np.unique(q.sort_values().get_values())
 
-			
-			#a = input()
 			axesE[c-1].plot(attr_column, error.loc[:, 'Erro'], label='Erro real')
 			
 			erro_relativo = error.loc[:,'Erro'].get_values()
@@ -82,7 +90,6 @@ for dataset, n_clusters in datasets:
 			xx = np.linspace(min(attr_column), max(attr_column))
 			axesE[c-1].plot(xx, np.polyval(poli, xx), label='Apr. Poli.')
 			axesE[c-1].legend()
-			
 
 			'''
 			data = data.sort_values(by=atributos_names[attr])
