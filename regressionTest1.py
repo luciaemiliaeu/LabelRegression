@@ -11,6 +11,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler 
 from sklearn.metrics import mean_squared_error
 from math import sqrt
+from matplotlib.patches import Polygon
+import scipy.integrate as integrate
 
 datasets = [("./databases/iris.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
@@ -84,11 +86,9 @@ for dataset, n_clusters in datasets:
 		fig.suptitle(atributos_names[attr])
 		figE.suptitle(atributos_names[attr])
 
-		
+		erroFuncs = pd.DataFrame(columns=['Cluster', 'Atributo', 'RMSE', 'AreaSobCurva'])
 		# Separa os dados em grupos
 		for c, data in y_.groupby(['Cluster']):
-			rmse = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
-			print('RMSE attr',atributos_names[attr]," cluster",c,' :', rmse)
 			error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'Erro'])
 			for out, values in data.groupby(atributos_names[attr]):
 				error.loc[error.shape[0],:] = [c,atributos_names[attr], out, values.mean(axis=0).Erro]
@@ -104,16 +104,26 @@ for dataset, n_clusters in datasets:
 			erro_relativo = error.loc[:,'Erro'].get_values()
 			poli = np.polyfit(attr_column.astype(float), erro_relativo.astype(float), 3)
 
+
 			xx = np.linspace(min(attr_column), max(attr_column))
-			axesE[c-1].plot(xx, np.polyval(poli, xx), label='Apr. Poli.')
-			axesE[c-1].legend()
+			yy = np.polyval(poli, xx)
+			verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
+			poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
 			
 
-			
+			axesE[c-1].add_patch(poly)
+			axesE[c-1].plot(xx, yy , label='Apr. Poli.')
+			axesE[c-1].legend()
+						
 			data = data.sort_values(by=atributos_names[attr])
 			data = data[['Actual', 'Predicted', 'Erro']]			
 			data.plot(kind = 'bar', ax=axes[c-1], title=('Classe '+str(c)))
-			
+
+			#auc = integrate.quad(yy,min(attr_column), max(attr_column))
+			rmse = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
+			#erroFuncs.loc[erroFuncs.shape[0],:] = [c,atributos_names[attr], rmse, auc ]
+			#print(erroFuncs)
+
 	plt.show()
 		
 
