@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import interp1d
 
+from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
@@ -11,8 +12,28 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 
-datasets = [("./databases/t3.csv",3)]
+datasets = [("./databases/iris.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
+
+
+def plotRegression(X, y, svr, attr):
+	plt.figure()
+	predicted = svr.predict(X)	
+	
+	'''
+	pca = PCA(n_components=1)
+	X_ = pca.fit(X).transform(X)
+	plt.scatter(X_, y)
+	plt.plot(X_, predicted)
+	'''
+	x = np.arange(X.shape[0])
+	plt.plot(x, predicted, lw=2)
+	plt.scatter(x, y, facecolor='none', edgecolor='b', s=50, label='support vectors')
+	plt.scatter(x[np.setdiff1d(np.arange(len(x)), svr.support_)],y[np.setdiff1d(np.arange(len(x)), svr.support_)], facecolor="none", edgecolor="k", s=50, label='other training data')
+	
+	plt.legend()
+	plt.title(attr)
+	
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -41,10 +62,12 @@ for dataset, n_clusters in datasets:
 		
 
 		# Treina o modelo de regressão 
-		svr_rbf = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=.1)
+		svr_rbf = SVR(kernel='linear', C=100, gamma='auto')
 		svr_rbf.fit(X_train,y_train)
 		predicted = svr_rbf.fit(X_train,y_train).predict(X_test)
 		
+		plotRegression(cluster.drop(cluster.columns[[attr]], axis=1).get_values(),cluster.loc[:,cluster.columns[attr]].get_values(), svr_rbf, atributos_names[attr])
+
 		# Dataframe : {y_real, y_Predicted, Classe, [attr]}
 		clt = Y[test_set.index]
 		y_ = pd.DataFrame({'Actual': y_test, 'Predicted': predicted, 'Cluster': clt})
@@ -52,11 +75,13 @@ for dataset, n_clusters in datasets:
 		y_.index = test_set.index
 		y_ = y_.join(test_set)
 		
+
+
 		print()
-		#fig, axes = plt.subplots(nrows=np.unique(Y).shape[0], ncols=1)
+		fig, axes = plt.subplots(nrows=np.unique(Y).shape[0], ncols=1)
 		figE, axesE = plt.subplots(nrows=np.unique(Y).shape[0], ncols =1)
 		
-		#fig.suptitle(atributos_names[attr])
+		fig.suptitle(atributos_names[attr])
 		figE.suptitle(atributos_names[attr])
 
 		
@@ -84,10 +109,10 @@ for dataset, n_clusters in datasets:
 			axesE[c-1].legend()
 			
 
-			'''
+			
 			data = data.sort_values(by=atributos_names[attr])
 			data = data[['Actual', 'Predicted', 'Erro']]			
-			data.plot(kind = 'bar', ax=axes[c-1], title=('Classe '+str(c)))'''
+			data.plot(kind = 'bar', ax=axes[c-1], title=('Classe '+str(c)))
 			
 	plt.show()
 		

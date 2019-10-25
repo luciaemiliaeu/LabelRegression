@@ -35,12 +35,6 @@ def regression(X, Y):
 
 	return svr_rbf, predicted_train, predicted
 
-def results(y, y_predicted, cluster, X):
-	# Dataframe : {y_real, y_Predicted, Classe, [attr]}
-	results = pd.DataFrame({'Actual': y , 'Predicted': y_predicted, 'Cluster': cluster})
-	results = results.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
-	results = results.join(X)
-
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -59,9 +53,13 @@ for dataset, n_clusters in datasets:
 	
 	for attr in range(cluster.shape[1]):
 		svr_rbf, predicted_train, predicted = regression(cluster, attr)
-		results = results(cluster.loc[:,cluster.columns[attr]].get_values(), predicted, Y, X)
 		
-		print()
+		# Dataframe : {y_real, y_Predicted, Classe, [attr]}
+		results = pd.DataFrame({'Actual': cluster.loc[:,cluster.columns[attr]].get_values() , 'Predicted': predicted, 'Cluster': Y})
+		results = results.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
+		results = results.join(X)
+		
+		print(results)
 		#fig, axes = plt.subplots(nrows=np.unique(Y).shape[0], ncols=1)
 		figE, axesE = plt.subplots(nrows=np.unique(Y).shape[0], ncols =1)
 		
