@@ -8,7 +8,7 @@ from matplotlib.patches import Polygon
 def plotRegression(X, y, svr, attr):
 	plt.figure()
 	predicted = svr.predict(X)	
-	
+
 	'''
 	pca = PCA(n_components=1)
 	X_ = pca.fit(X).transform(X)
@@ -19,7 +19,7 @@ def plotRegression(X, y, svr, attr):
 	plt.plot(x, predicted, lw=2)
 	plt.scatter(x, y, facecolor='none', edgecolor='b', s=50, label='support vectors')
 	plt.scatter(x[np.setdiff1d(np.arange(len(x)), svr.support_)],y[np.setdiff1d(np.arange(len(x)), svr.support_)], facecolor="none", edgecolor="k", s=50, label='other training data')
-	
+
 	plt.legend()
 	plt.title(attr)
 
@@ -30,7 +30,7 @@ def plotPrediction(attrName, predictions):
 
 	# Dataframe : {y_real, y_Predicted, Cluster, Erro}
 	for grupo, values in predictions.groupby(['Cluster']):
-		values = values.sort_values(by=attr)
+		values = values.sort_values(by=attrName)
 		values = values[['Actual', 'Predicted', 'Erro']]			
 		values.plot(kind = 'bar', ax=axes[grupo-1], title=('Classe '+str(grupo)))
 
