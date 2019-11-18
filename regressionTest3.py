@@ -42,7 +42,8 @@ for dataset, n_clusters in datasets:
 	atributos_names = X.columns
 	cluster = pd.DataFrame(X.apply(minmax_scale).get_values(), columns = atributos_names)
 	
-	error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'RSME', 'Erro'])
+	error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
+	label = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'Erro'])
 	for attr in cluster.columns:
 		test_set = cluster.sample(frac=0.33)
 		y_test = test_set.loc[:,attr].get_values()
@@ -67,16 +68,22 @@ for dataset, n_clusters in datasets:
 		y_ = y_.join(test_set.loc[y_.index, attr])
 		
 		#plotPrediction(attr, y_)
-	
-		# Separa os dados em grupos
-		for c, data in y_.groupby(['Cluster']):				
-			print(sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual'])))	
+		
+		# Calcula o erro do attr sob a faixa toda
+		for c, data in y_.groupby(['Cluster']):
 			for out, values in data.groupby([attr]):
-				rmse = sqrt(mean_squared_error(values.loc[:,'Predicted'], values.loc[:,'Actual']))
-				error.loc[error.shape[0],:] = [c, attr, X.loc[values.index[0],attr], out, rmse, values.mean(axis=0).Erro]	
-	
-	erro_metrics(error)
-	print(error.head())
+				error.loc[error.shape[0],:] = [c, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]
+			rsme = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
+			label.loc[label.shape[0],:] = [c, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]	
+
+	print(label.sort_values(by=['Atributo', 'Erro']))
+
+	#erro_metrics(error)
+	#print(label)
 	plotResults(title, error)
 plt.show()
-		
+
+'''for out, values in data.groupby([attr]):
+				#print(values)
+				error.loc[error.shape[0],:] = [c, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]	
+'''
