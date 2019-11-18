@@ -42,13 +42,13 @@ def plotResults(baseTitle, results, polis):
 		for cluster, values in data.groupby(['Cluster']):
 			attr_column = values.loc[values.index,'Saida'].get_values()
 			erro = values.loc[:,'Erro'].get_values()
-		
-			poli = polis[cont][cluster-1]
+			
+			poli = polis[cont][0][cluster-1]
 			xx = np.linspace(min(attr_column), max(attr_column))
 			yy = np.polyval(poli, xx)
 			verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
 			poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
-			
+
 			plt.plot(xx, yy , label='Cluster' +str(cluster))
 			plt.legend()
 		cont += 1

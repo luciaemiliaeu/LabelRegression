@@ -31,8 +31,31 @@ def erro_metrics(results):
 def polyApro(results):
 	poli = []
 	for attr, data in results.groupby(['Atributo']):
-		poli.append([np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3) for cluster, values in data.groupby(['Cluster'])])
+		poli.append(([np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3) for cluster, values in data.groupby(['Cluster'])], attr))
 	return poli
+
+def calErroFaixa(label, faixas, poli):
+	#pra calcular o erro das faixas
+	'''print(label)
+	for i in faixas:
+		print(i)
+	for i in poli:
+		print(i)
+	'''
+
+	for attr, data in label.groupby(['Atributo']):
+		
+		faixas_ = []
+		for i in faixas:
+			if i[1] == attr:
+				faixas_ = i[0]
+		for i in range(len(faixas_)-1):
+			inicio = faixas_[i]
+			fim = faixas_[i+1]
+			clusters = []
+			clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].get_values()
+			
+
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -82,11 +105,12 @@ for dataset, n_clusters in datasets:
 			rsme = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
 			label.loc[label.shape[0],:] = [c, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]	
 		#plotResults(title, error)
-	ponlinomios = polyApro(error)
-	print(label.sort_values(by=['Atributo', 'Erro']))
-	faixas = [(np.sort(np.unique(values[['minValue', 'maxValue']].get_values()))) for out, values in label.groupby(['Atributo'])]
-	plotResults( title, error, ponlinomios)
-
+	polinomios = polyApro(error)
+	#print(label.sort_values(by=['Atributo', 'Erro']))
+	faixas = [((np.sort(np.unique(values[['minValue', 'maxValue']].get_values()))), out) for out, values in label.groupby(['Atributo'])]
+	
+	#plotResults(title, error, polinomios)
+	calErroFaixa(label, faixas, polinomios)
 	#erro_metrics(error)
 	#print(label)
 	
