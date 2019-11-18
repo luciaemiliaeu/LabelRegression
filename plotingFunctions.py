@@ -34,26 +34,24 @@ def plotPrediction(attrName, predictions):
 		values = values[['Actual', 'Predicted', 'Erro']]			
 		values.plot(kind = 'bar', ax=axes[grupo-1], title=('Classe '+str(grupo)))
 
-def plotResults(baseTitle, results):
-
+def plotResults(baseTitle, results, polis):
+	cont = 0
 	for attr, data in results.groupby(['Atributo']):
-		num_cluster = np.unique(results.loc[:,'Cluster'].get_values()).shape[0]
 		plt.figure()
 		plt.suptitle(attr)
 		for cluster, values in data.groupby(['Cluster']):
 			attr_column = values.loc[values.index,'Saida'].get_values()
 			erro = values.loc[:,'Erro'].get_values()
-
-			poli = np.polyfit(attr_column.astype(float), erro.astype(float), 3)
+		
+			poli = polis[cont][cluster-1]
 			xx = np.linspace(min(attr_column), max(attr_column))
 			yy = np.polyval(poli, xx)
 			verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
 			poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
 			
-			#plt.add_patch(poly)
 			plt.plot(xx, yy , label='Cluster' +str(cluster))
 			plt.legend()
-
+		cont += 1
 '''def plotResults(baseTitle, results):
 
 	for attr, data in results.groupby(['Atributo']):

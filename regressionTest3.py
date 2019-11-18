@@ -28,6 +28,12 @@ def erro_metrics(results):
 			
 			erroFuncs.loc[erroFuncs.shape[0],:] = [cluster, attr, rmse, auc ]
 
+def polyApro(results):
+	poli = []
+	for attr, data in results.groupby(['Atributo']):
+		poli.append([np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3) for cluster, values in data.groupby(['Cluster'])])
+	return poli
+
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
 	title = dataset.split('/')[2].split('.')[0]+' dataset'
@@ -75,15 +81,13 @@ for dataset, n_clusters in datasets:
 				error.loc[error.shape[0],:] = [c, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]
 			rsme = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
 			label.loc[label.shape[0],:] = [c, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]	
-
+		#plotResults(title, error)
+	ponlinomios = polyApro(error)
 	print(label.sort_values(by=['Atributo', 'Erro']))
+	faixas = [(np.sort(np.unique(values[['minValue', 'maxValue']].get_values()))) for out, values in label.groupby(['Atributo'])]
+	plotResults( title, error, ponlinomios)
 
 	#erro_metrics(error)
 	#print(label)
-	plotResults(title, error)
+	
 plt.show()
-
-'''for out, values in data.groupby([attr]):
-				#print(values)
-				error.loc[error.shape[0],:] = [c, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]	
-'''
