@@ -34,28 +34,37 @@ def polyApro(results):
 		poli.append(([np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3) for cluster, values in data.groupby(['Cluster'])], attr))
 	return poli
 
-def calErroFaixa(label, faixas, poli):
-	#pra calcular o erro das faixas
-	'''print(label)
-	for i in faixas:
-		print(i)
-	for i in poli:
-		print(i)
-	'''
+def AUC(a, b, func):
+	auc, err = integrate.quad(np.poly1d(func),a, b)
+	return auc
 
+def calErroFaixa(label, faixas, poli):	
+	finalLabel = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 	for attr, data in label.groupby(['Atributo']):
+		faixas_ = [i[0] for i in faixas if i[1] == attr][0]
+		poli_ = [i[0] for i in poli if i[1] == attr][0]
 		
-		faixas_ = []
-		for i in faixas:
-			if i[1] == attr:
-				faixas_ = i[0]
+		erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 		for i in range(len(faixas_)-1):
 			inicio = faixas_[i]
 			fim = faixas_[i+1]
-			clusters = []
 			clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].get_values()
 			
-
+			for k in clusters:
+				erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, AUC(inicio, fim, poli_[k-1])]
+			
+			eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
+			clusterFinal = erroFaixa[(erroFaixa['AUC']) == eminimo]
+			
+			if not clusterFinal.empty:
+				if not finalLabel[(finalLabel['Atributo'] == attr)].empty:
+					if finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] == clusterFinal['min_faixa'].get_values()[0] and finalLabel.loc[finalLabel.shape[0]-1,'Cluster'] == clusterFinal['Cluster'].get_values()[0]:
+						finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] = clusterFinal['max_faixa'].get_values()[0]
+						finalLabel.loc[finalLabel.shape[0]-1,'AUC'] = (finalLabel.loc[finalLabel.shape[0]-1,'AUC'] + clusterFinal['AUC'].get_values()[0])
+					else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.get_values()[0]
+				else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.get_values()[0]
+		
+	return finalLabel
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -109,8 +118,9 @@ for dataset, n_clusters in datasets:
 	#print(label.sort_values(by=['Atributo', 'Erro']))
 	faixas = [((np.sort(np.unique(values[['minValue', 'maxValue']].get_values()))), out) for out, values in label.groupby(['Atributo'])]
 	
-	#plotResults(title, error, polinomios)
-	calErroFaixa(label, faixas, polinomios)
+	plotResults(title, error, polinomios)
+	rotulos = calErroFaixa(label, faixas, polinomios)
+	print(rotulos.sort_values(by=['Cluster', 'AUC']))
 	#erro_metrics(error)
 	#print(label)
 	
