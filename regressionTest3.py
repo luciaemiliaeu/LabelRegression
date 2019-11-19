@@ -66,6 +66,20 @@ def calErroFaixa(label, faixas, poli):
 		
 	return finalLabel
 
+def calAcerto(faixas, dados):
+	print(faixas.sort_values(by=['Cluster', 'AUC']))
+	rotulo = []
+	for clt, data in dados.groupby(['classe']):
+		regras = faixas[(faixas['Cluster'] == clt)]
+		total = data.shape[0]
+		acertos = []
+		for attr in regras['Atributo']:
+			n_acertos = data[(data[attr].get_values() >= regras[(regras['Atributo'] == attr)]['min_faixa'].get_values()) & (data[attr].get_values() <= regras[(regras['Atributo'] == attr)]['max_faixa'].get_values())].shape[0]
+			acertos.append((attr, n_acertos/total))
+		rotulo.append((clt, acertos))
+	for i in rotulo:
+		print(i)
+
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
 	title = dataset.split('/')[2].split('.')[0]+' dataset'
@@ -118,9 +132,10 @@ for dataset, n_clusters in datasets:
 	#print(label.sort_values(by=['Atributo', 'Erro']))
 	faixas = [((np.sort(np.unique(values[['minValue', 'maxValue']].get_values()))), out) for out, values in label.groupby(['Atributo'])]
 	
-	plotResults(title, error, polinomios)
+	#plotResults(title, error, polinomios)
 	rotulos = calErroFaixa(label, faixas, polinomios)
-	print(rotulos.sort_values(by=['Cluster', 'AUC']))
+	#print(rotulos.sort_values(by=['Cluster', 'AUC']))
+	calAcerto(rotulos, dataset)
 	#erro_metrics(error)
 	#print(label)
 	
