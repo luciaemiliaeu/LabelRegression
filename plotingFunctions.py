@@ -34,7 +34,7 @@ def plotPrediction(attrName, predictions):
 		values = values[['Actual', 'Predicted', 'Erro']]			
 		values.plot(kind = 'bar', ax=axes[grupo-1], title=('Classe '+str(grupo)))
 
-def plotResults(baseTitle, results, polis):
+def plotResults(baseTitle, results, polis, intersec):
 	cont = 0
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure()
@@ -49,6 +49,8 @@ def plotResults(baseTitle, results, polis):
 			verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
 			poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
 
+			inter = [i[0] for i in intersec if i[1]==attr]
+			plt.scatter(inter, np.polyval(poli, inter))
 			plt.plot(xx, yy , label='Cluster' +str(cluster))
 			plt.legend()
 		cont += 1

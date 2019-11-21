@@ -9,11 +9,8 @@ import matplotlib.pyplot as plt
 from plotingFunctions import plotRegression, plotPrediction, plotResults
 import scipy.integrate as integrate
 from math import sqrt
-from itertools import combinations
-from scipy.optimize import fsolve
-import pylab
 
-datasets = [("./databases/iris.csv",3)]
+datasets = [("./databases/sementes.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 
@@ -70,7 +67,7 @@ def calErroFaixa(label, faixas, poli):
 	return finalLabel
 
 def calAcerto(faixas, dados):
-	#print(faixas.sort_values(by=['Cluster', 'AUC']))
+	print(faixas.sort_values(by=['Cluster', 'AUC']))
 	rotulo = []
 	for clt, data in dados.groupby(['classe']):
 		regras = faixas[(faixas['Cluster'] == clt)]
@@ -83,22 +80,8 @@ def calAcerto(faixas, dados):
 				n_acertos = data[(data[attr].get_values() >= regra['min_faixa']) & (data[attr].get_values() <= regra['max_faixa'])].shape[0]
 				acertos.append((attr, regra['min_faixa'],regra['max_faixa'], n_acertos/total))
 		rotulo.append((clt, acertos))
-	return rotulo
-def findIntersection(fun1,fun2,x0):	
-	return fsolve(lambda x : np.polyval(fun1, x) - np.polyval(fun2, x),x0)
-
-def intersections(minMaxAttrs, polinomios):
-	x_intersec = []
-	for faixas, poly in zip(minMaxAttrs, polinomios):
-		x=[]
-		combinations_ = list(combinations(range(len(poly[0])), 2))
-		for c in combinations_: 
-			for x0 in faixas[0]:
-				idx = findIntersection(poly[0][c[0]], poly[0][c[1]],x0)
-				x.append(round(idx[0],2))
-		x_intersec.append((np.unique(x).tolist(), poly[1]))
-	return x_intersec
-	
+	for i in rotulo:
+		print(i)
 
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
@@ -117,27 +100,21 @@ for dataset, n_clusters in datasets:
 	error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	label = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'Erro'])
 	for attr in cluster.columns:
-		test_set = cluster.sample(frac=0.33)
-		y_test = test_set.loc[:,attr].get_values()
-		X_test = test_set.drop(attr, axis=1).get_values()
-
-		train_set = cluster.drop(test_set.index)
-		y_train = train_set.loc[:,attr].get_values()
-		X_train = train_set.drop(attr, axis=1).get_values()
+		y = cluster.loc[:,attr].get_values()
+		x = cluster.drop(attr, axis=1).get_values()
 		
 
 		# Treina o modelo de regressão 
 		svr_rbf = SVR(kernel='linear', C=100, gamma='auto')
-		svr_rbf.fit(X_train,y_train)
-		predicted = svr_rbf.fit(X_train,y_train).predict(X_test)
+		predicted = svr_rbf.fit(x,y).predict(x)
 		
 		#plotRegression(cluster.drop(attr, axis=1).get_values(),cluster.loc[:,attr].get_values(), svr_rbf, attr)
 
 		# Dataframe : {y_real, y_Predicted, Cluster, Erro}
-		y_ = pd.DataFrame({'Actual': y_test, 'Predicted': predicted, 'Cluster':  Y[test_set.index]})
+		y_ = pd.DataFrame({'Actual': y, 'Predicted': predicted, 'Cluster':  Y[cluster.index]})
 		y_ = y_.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
-		y_.index = test_set.index
-		y_ = y_.join(test_set.loc[y_.index, attr])
+		y_.index = cluster.index
+		y_ = y_.join(cluster.loc[y_.index, attr])
 		
 		#plotPrediction(attr, y_)
 		
@@ -150,21 +127,13 @@ for dataset, n_clusters in datasets:
 		#plotResults(title, error)
 	polinomios = polyApro(error)
 	#print(label.sort_values(by=['Atributo', 'Erro']))
-	minMax = [(values[['minValue']].min().get_values().tolist()+values[['maxValue']].max().get_values().tolist(), out) for out, values in label.groupby(['Atributo'])]
-	faixas = [(np.sort(np.unique(values[['minValue', 'maxValue']].get_values())).tolist(), out) for out, values in label.groupby(['Atributo'])]
-	intersec = intersections(faixas, polinomios)
+	faixas = [((np.sort(np.unique(values[['minValue', 'maxValue']].get_values()))), out) for out, values in label.groupby(['Atributo'])]
 	
-	points = []
-	for faixa, inter in zip(faixas, intersec):
-		points.append((np.sort(np.unique(faixa[0] + inter[0])).tolist(), faixa[1]))
-	#print(minMax)
-	
-	plotResults(title, error, polinomios, intersec)
-	rotulos = calErroFaixa(label, points, polinomios)
-	print(rotulos.sort_values(by=['Cluster', 'AUC']))
-	print(calAcerto(rotulos, dataset))
+	plotResults(title, error, polinomios)
+	rotulos = calErroFaixa(label, faixas, polinomios)
+	#print(rotulos.sort_values(by=['Cluster', 'AUC']))
+	calAcerto(rotulos, dataset)
 	#erro_metrics(error)
 	#print(label)
-	
 	
 plt.show()
