@@ -36,6 +36,9 @@ def plotPrediction(attrName, predictions):
 
 def plotResults(baseTitle, results, polis, intersec):
 	cont = 0
+	#print(results)
+	#print(intersec)
+	#for p in polis: print(p)
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure()
 		plt.suptitle(attr)
@@ -43,14 +46,18 @@ def plotResults(baseTitle, results, polis, intersec):
 			attr_column = values.loc[values.index,'Saida'].get_values()
 			erro = values.loc[:,'Erro'].get_values()
 			
-			poli = polis[cont][0][cluster-1]
-			xx = np.linspace(min(attr_column), max(attr_column))
-			yy = np.polyval(poli, xx)
+			poli = [p[0] for p in polis if p[1]==attr]
+			pol = [p[0] for p in poli[0] if p[1]==cluster]
+
+			min_ = min(attr_column)
+			max_ = max(attr_column)
+			xx = np.linspace(min_, max_)
+			yy = np.polyval(pol[0], xx)
 			verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
 			poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
 
-			inter = [i[0] for i in intersec if i[1]==attr]
-			plt.scatter(inter, np.polyval(poli, inter))
+			inter=[i[0] for i in intersec if i[1]==attr and i[2]==cluster]
+			plt.scatter(inter, np.polyval(pol[0], inter))
 			plt.plot(xx, yy , label='Cluster' +str(cluster))
 			plt.legend()
 		cont += 1

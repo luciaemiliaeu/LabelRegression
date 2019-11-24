@@ -10,10 +10,10 @@ from plotingFunctions import plotRegression, plotPrediction, plotResults
 import scipy.integrate as integrate
 from math import sqrt
 from itertools import combinations
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, newton, broyden1, newton_krylov
 import pylab
 
-datasets = [("./databases/iris.csv",3)]
+datasets = [("./databases/sementes.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 
@@ -34,11 +34,11 @@ def erro_metrics(results):
 def polyApro(results):
 	poli = []
 	for attr, data in results.groupby(['Atributo']):
-		poli.append(([np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3) for cluster, values in data.groupby(['Cluster'])], attr))
+		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3), cluster) for cluster, values in data.groupby(['Cluster'])], attr))
 	return poli
 
 def AUC(a, b, func):
-	auc, err = integrate.quad(np.poly1d(func),a, b)
+	auc, err = integrate.quad(np.poly1d(func[0]),a, b)
 	return auc
 
 def calErroFaixa(label, faixas, poli):	
@@ -52,9 +52,8 @@ def calErroFaixa(label, faixas, poli):
 			inicio = faixas_[i]
 			fim = faixas_[i+1]
 			clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].get_values()
-			
 			for k in clusters:
-				erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, AUC(inicio, fim, poli_[k-1])]
+				erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
 			
 			eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
 			clusterFinal = erroFaixa[(erroFaixa['AUC']) == eminimo]
@@ -85,18 +84,43 @@ def calAcerto(faixas, dados):
 		rotulo.append((clt, acertos))
 	return rotulo
 def findIntersection(fun1,fun2,x0):	
-	return fsolve(lambda x : np.polyval(fun1, x) - np.polyval(fun2, x),x0)
+	return fsolve(lambda x : np.polyval(fun1, x) - np.polyval(fun2, x),x0, full_output=True, factor = 10)
 
-def intersections(minMaxAttrs, polinomios):
+def quadratic_intersections(p, q):
+    """Given two quadratics p and q, determines the points of intersection"""
+    x = np.roots(np.asarray(p) - np.asarray(q))
+    y = np.polyval(p, x)
+    return x, y
+def intersections(faixasAttr, polinomios, minMax):
+	x =[]
+	for faixas, poly in zip(faixasAttr, polinomios):
+		limites = [(i[0],i[1][1]) for i in minMax if i[1][0] == poly[1]]
+		combinations_ = list(combinations([i[1] for i in limites], 2))
+		for c in combinations_: 	
+			x_ = [a[0] for a in limites if (a[1] == c[0] or a[1]==c[1])]
+			x_minimo = max([min(a) for a in x_])
+			x_maximo = min([max(a) for a in x_])
+
+			if x_minimo < x_maximo:
+				step = (x_maximo - x_minimo)/10
+				xx = np.linspace(x_minimo,x_maximo, num=10)
+				print(x_minimo, x_maximo, step, xx)
+				poly1 = [i[0] for i in poly[0] if i[1]==c[0]]
+				poly2 = [i[0] for i in poly[0] if i[1]==c[1]]
+
+				for x0 in xx:
+					r = findIntersection(poly1[0], poly2[0],x0)
+					if (r[3] == 'The solution converged.'):
+						if(r[0][0] >= x_minimo and r[0][0]<= x_maximo):
+							print(r[0][0])
+							x.append((r[0][0], faixas[1], c))
+						else: print('out of bounderies')
+					else: print('not converged')
+				
 	x_intersec = []
-	for faixas, poly in zip(minMaxAttrs, polinomios):
-		x=[]
-		combinations_ = list(combinations(range(len(poly[0])), 2))
-		for c in combinations_: 
-			for x0 in faixas[0]:
-				idx = findIntersection(poly[0][c[0]], poly[0][c[1]],x0)
-				x.append(round(idx[0],2))
-		x_intersec.append((np.unique(x).tolist(), poly[1]))
+	for attr, clt in [i[1] for i in minMax]:
+		points = [i[0] for i in x if i[1]==attr and clt in i[2]]
+		x_intersec.append((np.unique(points).tolist(),attr, clt))
 	return x_intersec
 	
 
@@ -150,19 +174,25 @@ for dataset, n_clusters in datasets:
 		#plotResults(title, error)
 	polinomios = polyApro(error)
 	#print(label.sort_values(by=['Atributo', 'Erro']))
-	minMax = [(values[['minValue']].min().get_values().tolist()+values[['maxValue']].max().get_values().tolist(), out) for out, values in label.groupby(['Atributo'])]
+
+	minMax = [(values[['minValue']].min().get_values().tolist()+values[['maxValue']].max().get_values().tolist(), out) for out, values in label.groupby(['Atributo', 'Cluster'])]
 	faixas = [(np.sort(np.unique(values[['minValue', 'maxValue']].get_values())).tolist(), out) for out, values in label.groupby(['Atributo'])]
-	intersec = intersections(faixas, polinomios)
+	intersec = intersections(faixas, polinomios, minMax)
+	inter_points = []
+	for i in np.unique(label['Atributo'].get_values()).tolist():
+		p = [a[0] for a in intersec if a[1]==i]
+		a = [x for xs in p for x in xs]
+		inter_points.append((a,i))
 	
 	points = []
-	for faixa, inter in zip(faixas, intersec):
+	for faixa, inter in zip(faixas, inter_points):
 		points.append((np.sort(np.unique(faixa[0] + inter[0])).tolist(), faixa[1]))
 	#print(minMax)
 	
 	plotResults(title, error, polinomios, intersec)
 	rotulos = calErroFaixa(label, points, polinomios)
 	print(rotulos.sort_values(by=['Cluster', 'AUC']))
-	print(calAcerto(rotulos, dataset))
+	#print(calAcerto(rotulos, dataset))
 	#erro_metrics(error)
 	#print(label)
 	
