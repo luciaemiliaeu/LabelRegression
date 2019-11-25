@@ -17,7 +17,7 @@ datasets = [("./databases/iris.csv",3)]
 def polyApro(results):
 	poli = []
 	for attr, data in results.groupby(['Atributo']):
-		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].get_values().astype(float), values.loc[:,'Erro'].get_values().astype(float), 3), cluster) for cluster, values in data.groupby(['Cluster'])], attr))
+		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'Erro'].to_numpy().astype(float), 3), cluster) for cluster, values in data.groupby(['Cluster'])], attr))
 	return poli
 
 def AUC(a, b, func):
@@ -34,7 +34,7 @@ def calAUCRange(label, faixas, poli):
 		for i in range(len(faixas_)-1):
 			inicio = faixas_[i]
 			fim = faixas_[i+1]
-			clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].get_values()
+			clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].to_numpy()
 			for k in clusters:
 				erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
 			
@@ -43,11 +43,11 @@ def calAUCRange(label, faixas, poli):
 			
 			if not clusterFinal.empty:
 				if not finalLabel[(finalLabel['Atributo'] == attr)].empty:
-					if finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] == clusterFinal['min_faixa'].get_values()[0] and finalLabel.loc[finalLabel.shape[0]-1,'Cluster'] == clusterFinal['Cluster'].get_values()[0]:
-						finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] = clusterFinal['max_faixa'].get_values()[0]
-						finalLabel.loc[finalLabel.shape[0]-1,'AUC'] = (finalLabel.loc[finalLabel.shape[0]-1,'AUC'] + clusterFinal['AUC'].get_values()[0])
-					else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.get_values()[0]
-				else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.get_values()[0]
+					if finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] == clusterFinal['min_faixa'].to_numpy()[0] and finalLabel.loc[finalLabel.shape[0]-1,'Cluster'] == clusterFinal['Cluster'].to_numpy()[0]:
+						finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] = clusterFinal['max_faixa'].to_numpy()[0]
+						finalLabel.loc[finalLabel.shape[0]-1,'AUC'] = (finalLabel.loc[finalLabel.shape[0]-1,'AUC'] + clusterFinal['AUC'].to_numpy()[0])
+					else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.to_numpy()[0]
+				else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.to_numpy()[0]
 		
 	return finalLabel
 
@@ -87,21 +87,21 @@ def intersections(polynomials, minMax):
 	
 def partitionDB(X, Y, test_size):
 	test_set = X.sample(frac=test_size)
-	y_test = test_set.loc[:,Y].get_values()
-	X_test = test_set.drop(Y, axis=1).get_values()
+	y_test = test_set.loc[:,Y].to_numpy()
+	X_test = test_set.drop(Y, axis=1).to_numpy()
 
 	train_set = X.drop(test_set.index)
-	y_train = train_set.loc[:,Y].get_values()
-	X_train = train_set.drop(Y, axis=1).get_values()
+	y_train = train_set.loc[:,Y].to_numpy()
+	X_train = train_set.drop(Y, axis=1).to_numpy()
 
 	return test_set, train_set, X_test, X_train, y_test, y_train
 
 def importBD(path):
 	dataset = pd.read_csv(path, sep=',',parse_dates=True)
-	Y = dataset.loc[:,'classe'].get_values()
+	Y = dataset.loc[:,'classe'].to_numpy()
 	X = dataset.drop('classe', axis=1)
 	attr_names = X.columns
-	normalBD = pd.DataFrame(X.apply(minmax_scale).get_values(), columns = attr_names)
+	normalBD = pd.DataFrame(X.apply(minmax_scale).to_numpy(), columns = attr_names)
 
 	return dataset, X, Y, attr_names, normalBD
 
@@ -114,7 +114,7 @@ def trainModel(X_train, y_train, X_test ):
 
 def result(attr, y_test, y_Predicted, cluster):
 	idx = y_test.index
-	y = y_test.get_values()
+	y = y_test.to_numpy()
 
 	# y_ : {y_real, y_Predicted, Cluster, Erro}
 	y_ = pd.DataFrame({'Actual': y, 'Predicted': y_Predicted, 'Cluster':  cluster[idx]})
@@ -128,10 +128,10 @@ def rangePatition(error, label, attr_names ):
 	polynomials = polyApro(error)
 
 	# MinMax de cada atributo por grupo
-	minMax = [(values[['minValue']].min().get_values().tolist()+values[['maxValue']].max().get_values().tolist(), out) for out, values in label.groupby(['Atributo', 'Cluster'])]
+	minMax = [(values[['minValue']].min().to_numpy().tolist()+values[['maxValue']].max().to_numpy().tolist(), out) for out, values in label.groupby(['Atributo', 'Cluster'])]
 	
 	# lista ordenada de valores no inicio  ou final de um polinomio por atributo
-	ranges = [(np.sort(np.unique(values[['minValue', 'maxValue']].get_values())).tolist(), out) for out, values in label.groupby(['Atributo'])]
+	ranges = [(np.sort(np.unique(values[['minValue', 'maxValue']].to_numpy())).tolist(), out) for out, values in label.groupby(['Atributo'])]
 	
 	# pontos de interseção dos polinomios ([pontos], attr)
 	inter_points = []
@@ -150,14 +150,14 @@ def rangePatition(error, label, attr_names ):
 	return polynomials, points, intersec
 
 def calAccuracyRange(info, data):
-	data_ = data[(data['classe'] == info['Cluster'])][info['Atributo']].get_values().tolist()
+	data_ = data[(data['classe'] == info['Cluster'])][info['Atributo']].to_numpy().tolist()
 	acertos = [x for x in data_ if x>=info['min_faixa'] and x<=info['max_faixa']]
 	return len(acertos) / len(data_)
 	
 def calLabel(rangeAUC, V):
 	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
 	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
-	labels_ = labels[(labels['Accuracy'].get_values()+V >= [a[1] for a in maxRankLabels if a[0]==labels['Cluster'][0]])]#.sort_values(by=['Cluster', 'Accuracy'], ascending= [True, False])
+	labels_ = labels[(labels['Accuracy'].to_numpy()+V >= [a[1] for a in maxRankLabels if a[0]==labels['Cluster'][0]])].sort_values(by=['Cluster', 'Accuracy'], ascending= [True, False])
 	return labels_
 
 def LabelAccuracy(label, data):
@@ -167,7 +167,7 @@ def LabelAccuracy(label, data):
 		data_ = data[(data['classe'] == clt)]
 		total = data_.shape[0]
 		for attr, regra in values.groupby('Atributo'):
-			data_ = data_[(data_[regra['Atributo']].get_values()>= regra['min_faixa'].get_values()) & (data_[regra['Atributo']].get_values()<= regra['max_faixa'].get_values())]#[regra['Atributo']].get_values()
+			data_ = data_[(data_[regra['Atributo']].to_numpy()>= regra['min_faixa'].to_numpy()) & (data_[regra['Atributo']].to_numpy()<= regra['max_faixa'].to_numpy())]#[regra['Atributo']].to_numpy()
 		labelsEval.loc[labelsEval.shape[0],:] = [clt, data_.shape[0]/total]
 		frames = pd.concat([frames,data_])
 	return labelsEval, frames
@@ -191,7 +191,7 @@ for dataset, n_clusters in datasets:
 
 		# Treina o modelo de regressão 
 		model, y_Predicted = trainModel(X_train, y_train, X_test)
-		#plotRegression(normalBD.drop(attr, axis=1).get_values(),normalBD.loc[:,attr].get_values(), model, attr)
+		#plotRegression(normalBD.drop(attr, axis=1).to_numpy(),normalBD.loc[:,attr].to_numpy(), model, attr)
 
 		# y_ : {y_real, y_Predicted, Cluster, Erro}
 		y_ = result(normalBD[attr], normalBD.loc[test_set.index, attr], y_Predicted, Y)
