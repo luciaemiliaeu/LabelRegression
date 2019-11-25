@@ -24,7 +24,7 @@ def plotRegression(X, y, svr, attr):
 	plt.title(attr)
 
 def plotPrediction(attrName, predictions):
-	num_cluster = np.unique(predictions.loc[:,'Cluster'].get_values()).shape[0]
+	num_cluster = np.unique(predictions.loc[:,'Cluster'].to_numpy()).shape[0]
 	fig, axes = plt.subplots(nrows=num_cluster, ncols=1)
 	fig.suptitle(attrName)
 
@@ -40,8 +40,8 @@ def plotResults(baseTitle, results, polis, intersec):
 		plt.figure()
 		plt.suptitle(attr)
 		for cluster, values in data.groupby(['Cluster']):
-			attr_column = values.loc[values.index,'Saida'].get_values()
-			erro = values.loc[:,'Erro'].get_values()
+			attr_column = values.loc[values.index,'Saida'].to_numpy()
+			erro = values.loc[:,'Erro'].to_numpy()
 			
 			poli = [p[0] for p in polis if p[1]==attr]
 			pol = [p[0] for p in poli[0] if p[1]==cluster]
@@ -61,13 +61,13 @@ def plotResults(baseTitle, results, polis, intersec):
 '''def plotResults(baseTitle, results):
 
 	for attr, data in results.groupby(['Atributo']):
-		num_cluster = np.unique(results.loc[:,'Cluster'].get_values()).shape[0]
+		num_cluster = np.unique(results.loc[:,'Cluster'].to_numpy()).shape[0]
 		figE, axesE = plt.subplots(nrows=num_cluster, ncols =1)
 		figE.suptitle(attr)
 
 		for cluster, values in data.groupby(['Cluster']):
-			attr_column = values.loc[values.index,'Saida'].get_values()
-			erro = values.loc[:,'Erro'].get_values()
+			attr_column = values.loc[values.index,'Saida'].to_numpy()
+			erro = values.loc[:,'Erro'].to_numpy()
 
 			axesE[cluster-1].plot(attr_column, erro, label='Erro real')
 			

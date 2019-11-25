@@ -10,7 +10,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from plotingFunctions import plotRegression, plotPrediction, plotResults
 
-datasets = [("./databases/iris.csv",3)]
+datasets = [("./databases/sementes.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 
@@ -157,7 +157,7 @@ def calAccuracyRange(info, data):
 def calLabel(rangeAUC, V):
 	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
 	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
-	labels_ = labels[(labels['Accuracy'].to_numpy()+V >= [a[1] for a in maxRankLabels if a[0]==labels['Cluster'][0]])].sort_values(by=['Cluster', 'Accuracy'], ascending= [True, False])
+	labels_ = labels[(labels['Accuracy'].to_numpy()+V >= [a[1] for a in maxRankLabels if a[0]==labels['Cluster'].to_numpy()[0]])].sort_values(by=['Cluster', 'Accuracy'], ascending= [True, False])
 	return labels_
 
 def LabelAccuracy(label, data):
@@ -211,5 +211,5 @@ for dataset, n_clusters in datasets:
 
 	print(label)
 	print(result)
-	plotResults(title, real_error, poly, inter_points)
+	#plotResults(title, real_error, poly, inter_points)
 plt.show()
