@@ -35,10 +35,7 @@ def plotPrediction(attrName, predictions):
 		values.plot(kind = 'bar', ax=axes[grupo-1], title=('Classe '+str(grupo)))
 
 def plotResults(baseTitle, results, polis, intersec):
-	cont = 0
-	#print(results)
-	#print(intersec)
-	#for p in polis: print(p)
+
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure()
 		plt.suptitle(attr)
@@ -60,7 +57,7 @@ def plotResults(baseTitle, results, polis, intersec):
 			plt.scatter(inter, np.polyval(pol[0], inter))
 			plt.plot(xx, yy , label='Cluster' +str(cluster))
 			plt.legend()
-		cont += 1
+	
 '''def plotResults(baseTitle, results):
 
 	for attr, data in results.groupby(['Atributo']):
