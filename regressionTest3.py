@@ -126,7 +126,7 @@ def result(attr, y_test, y_Predicted, cluster):
 
 def rangePatition(error, label, attr_names ):
 	polynomials = polyApro(error)
-
+	print(polynomials)
 	# MinMax de cada atributo por grupo
 	minMax = [(values[['minValue']].min().to_numpy().tolist()+values[['maxValue']].max().to_numpy().tolist(), out) for out, values in label.groupby(['Atributo', 'Cluster'])]
 	
@@ -157,7 +157,10 @@ def calAccuracyRange(info, data):
 def calLabel(rangeAUC, V):
 	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
 	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
-	labels_ = labels[(labels['Accuracy'].to_numpy()+V >= [a[1] for a in maxRankLabels if a[0]==labels['Cluster'].to_numpy()[0]])].sort_values(by=['Cluster', 'Accuracy'], ascending= [True, False])
+	labels_=pd.DataFrame(columns=labels.columns)
+	for a in maxRankLabels:
+		l = labels[(labels['Cluster']==a[0])]
+		labels_ = pd.concat([labels_, l[(l['Accuracy']>= a[1]-V)]])
 	return labels_
 
 def LabelAccuracy(label, data):

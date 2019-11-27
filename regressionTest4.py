@@ -10,14 +10,14 @@ from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from plotingFunctions import plotRegression, plotPrediction, plotResults
 
-datasets = [("./databases/sementes.csv",3)]
+datasets = [("./databases/vidros.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 
 def polyApro(results):
 	poli = []
 	for attr, data in results.groupby(['Atributo']):
-		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'Erro'].to_numpy().astype(float), 3), cluster) for cluster, values in data.groupby(['Cluster'])], attr))
+		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'Erro'].to_numpy().astype(float), 2), cluster) for cluster, values in data.groupby(['Cluster']) if values.shape[0]>1], attr))
 	return poli
 
 def AUC(a, b, func):
@@ -158,6 +158,7 @@ def calAccuracyRange(info, data):
 	
 def calLabel(rangeAUC, V):
 	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
+	print(labels.sort_values(['Cluster','Accuracy'], ascending=[True,False]))
 	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
 	labels_=pd.DataFrame(columns=labels.columns)
 	for a in maxRankLabels:
@@ -187,24 +188,22 @@ for dataset, n_clusters in datasets:
 
 	# Cria DataFrame com os valores de X e o cluster Y
 	db, X, Y, attr_names, normalBD = importBD(dataset)
-	
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
 	for attr in attr_names:
 		#y = attr
-		y = normalBD.loc[:,attr].get_values()
-		x = normalBD.drop(attr, axis=1).get_values()
+		y = normalBD.loc[:,attr].to_numpy()
+		x = normalBD.drop(attr, axis=1).to_numpy()
 		
 
 		# Treina o modelo de regressão 
 		model, y_Predicted = trainModel(x, y, x)
-			
-		#plotRegression(cluster.drop(attr, axis=1).get_values(),cluster.loc[:,attr].get_values(), svr_rbf, attr)
+		
+		#plotRegression(cluster.drop(attr, axis=1).to_numpy(),cluster.loc[:,attr].to_numpy(), svr_rbf, attr)
 
 		# Dataframe : {y_real, y_Predicted, Cluster, Erro}
 		y_ = result(normalBD[attr], normalBD.loc[X.index, attr], y_Predicted, Y)
-		
 		#plotPrediction(attr, y_)
 		
 		# Calcula o erro do attr sob a faixa toda
