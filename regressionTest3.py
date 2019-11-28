@@ -10,14 +10,14 @@ from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from plotingFunctions import plotRegression, plotPrediction, plotResults
 
-datasets = [("./databases/sementes.csv",3)]
+datasets = [("./databases/vidros.csv",3)]
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 
 def polyApro(results):
 	poli = []
 	for attr, data in results.groupby(['Atributo']):
-		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'Erro'].to_numpy().astype(float), 3), cluster) for cluster, values in data.groupby(['Cluster'])], attr))
+		poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'Erro'].to_numpy().astype(float), 2), cluster) for cluster, values in data.groupby(['Cluster']) if values.shape[0]>1], attr))
 	return poli
 
 def AUC(a, b, func):
@@ -86,24 +86,22 @@ def intersections(polynomials, minMax):
 	return x_intersec
 	
 def partitionDB(X, Y, test_size):
-	test_set = X.sample(frac=test_size)
-	y_test = test_set.loc[:,Y].to_numpy()
-	X_test = test_set.drop(Y, axis=1).to_numpy()
-
-	train_set = X.drop(test_set.index)
-	y_train = train_set.loc[:,Y].to_numpy()
-	X_train = train_set.drop(Y, axis=1).to_numpy()
-
-	return test_set, train_set, X_test, X_train, y_test, y_train
+	X_test = X.sample(frac=test_size)
+	y_test = Y.loc[X_test.index]
+	
+	X_train = X.drop(X_test.index)
+	y_train = Y.loc[X_train.index]	
+	
+	return X_test, X_train, y_test, y_train
 
 def importBD(path):
 	dataset = pd.read_csv(path, sep=',',parse_dates=True)
-	Y = dataset.loc[:,'classe'].to_numpy()
+	Y = dataset.loc[:,'classe']
 	X = dataset.drop('classe', axis=1)
 	attr_names = X.columns
 	normalBD = pd.DataFrame(X.apply(minmax_scale).to_numpy(), columns = attr_names)
 
-	return dataset, X, Y, attr_names, normalBD
+	return dataset, X, Y, normalBD, attr_names
 
 def trainModel(X_train, y_train, X_test ):
 	model = SVR(kernel='linear', C=100, gamma='auto')
@@ -113,20 +111,17 @@ def trainModel(X_train, y_train, X_test ):
 
 
 def result(attr, y_test, y_Predicted, cluster):
-	idx = y_test.index
-	y = y_test.to_numpy()
-
 	# y_ : {y_real, y_Predicted, Cluster, Erro}
-	y_ = pd.DataFrame({'Actual': y, 'Predicted': y_Predicted, 'Cluster':  cluster[idx]})
+	y_ = pd.DataFrame({'Actual': y_test.to_numpy(), 'Predicted': y_Predicted, 'Cluster': cluster[y_test.index]})
 	y_ = y_.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
-	y_.index = idx
-	y_ = y_.join(attr[idx])
+	y_.index = y_test.index
+	y_ = y_.join(attr[y_test.index])
 
 	return y_
 
 def rangePatition(error, label, attr_names ):
 	polynomials = polyApro(error)
-	print(polynomials)
+
 	# MinMax de cada atributo por grupo
 	minMax = [(values[['minValue']].min().to_numpy().tolist()+values[['maxValue']].max().to_numpy().tolist(), out) for out, values in label.groupby(['Atributo', 'Cluster'])]
 	
@@ -175,6 +170,15 @@ def LabelAccuracy(label, data):
 		frames = pd.concat([frames,data_])
 	return labelsEval, frames
 
+def partitionDBbyAttr(X_test, X_train, attr):
+	attr_train = X_train.loc[:,attr]
+	attr_test = X_test.loc[:,attr]
+
+	x_train = X_train.drop(attr, axis=1)
+	x_test = X_test.drop(attr, axis=1)
+	
+	return x_test, x_train, attr_test, attr_train
+
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
 	title = dataset.split('/')[2].split('.')[0]+' dataset'
@@ -182,22 +186,25 @@ for dataset, n_clusters in datasets:
 	print(title)
 	print("")	
 
-	# Cria DataFrame com os valores de X e o cluster Y
-	db, X, Y, attr_names, normalBD = importBD(dataset)
-	
+	# Cria DataFrame com os valores de X,  o cluster Y e X normalizado
+	# retorna o array de nomes da bd
+	db, X, Y, normalBD, attr_names = importBD(dataset)
+	# Cria DataFrame da bd normalizada em treino e teste
+	X_test, X_train, y_test, y_train = partitionDB(normalBD, Y, 0.33)
+
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
 	for attr in attr_names:
-		#y = attr
-		test_set, train_set, X_test, X_train, y_test, y_train = partitionDB(normalBD, attr, 0.33)
-
+		
+		x_test, x_train, attr_test, attr_train = partitionDBbyAttr(X_test, X_train, attr)
+		
 		# Treina o modelo de regressão 
-		model, y_Predicted = trainModel(X_train, y_train, X_test)
-		#plotRegression(normalBD.drop(attr, axis=1).to_numpy(),normalBD.loc[:,attr].to_numpy(), model, attr)
+		model, y_Predicted = trainModel(x_train.to_numpy(), attr_train.to_numpy(), x_test.to_numpy())
+		#plotRegression(x_test,attr_test, model, attr)
 
 		# y_ : {y_real, y_Predicted, Cluster, Erro}
-		y_ = result(normalBD[attr], normalBD.loc[test_set.index, attr], y_Predicted, Y)
+		y_ = result(normalBD[attr], attr_test, y_Predicted, Y)
 		#plotPrediction(attr, y_)	
 		
 		for clt, data in y_.groupby(['Cluster']):

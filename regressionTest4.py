@@ -87,23 +87,23 @@ def intersections(polynomials, minMax):
 	
 def partitionDB(X, Y, test_size):
 	test_set = X.sample(frac=test_size)
-	y_test = test_set.loc[:,Y].to_numpy()
-	X_test = test_set.drop(Y, axis=1).to_numpy()
+	y_test = test_set.loc[:,Y]
+	X_test = test_set.drop(Y, axis=1)
 
 	train_set = X.drop(test_set.index)
-	y_train = train_set.loc[:,Y].to_numpy()
-	X_train = train_set.drop(Y, axis=1).to_numpy()
+	y_train = train_set.loc[:,Y]
+	X_train = train_set.drop(Y, axis=1)
 
 	return test_set, train_set, X_test, X_train, y_test, y_train
 
 def importBD(path):
 	dataset = pd.read_csv(path, sep=',',parse_dates=True)
-	Y = dataset.loc[:,'classe'].to_numpy()
+	Y = dataset.loc[:,'classe']
 	X = dataset.drop('classe', axis=1)
 	attr_names = X.columns
 	normalBD = pd.DataFrame(X.apply(minmax_scale).to_numpy(), columns = attr_names)
 
-	return dataset, X, Y, attr_names, normalBD
+	return dataset, X, Y, normalBD, attr_names
 
 def trainModel(X_train, y_train, X_test ):
 	model = SVR(kernel='linear', C=100, gamma='auto')
@@ -113,14 +113,11 @@ def trainModel(X_train, y_train, X_test ):
 
 
 def result(attr, y_test, y_Predicted, cluster):
-	idx = y_test.index
-	y = y_test.to_numpy()
-
 	# y_ : {y_real, y_Predicted, Cluster, Erro}
-	y_ = pd.DataFrame({'Actual': y, 'Predicted': y_Predicted, 'Cluster':  cluster[idx]})
+	y_ = pd.DataFrame({'Actual': y_test.to_numpy(), 'Predicted': y_Predicted, 'Cluster': cluster[y_test.index]})
 	y_ = y_.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
-	y_.index = idx
-	y_ = y_.join(attr[idx])
+	y_.index = y_test.index
+	y_ = y_.join(attr[y_test.index])
 
 	return y_
 
@@ -158,7 +155,6 @@ def calAccuracyRange(info, data):
 	
 def calLabel(rangeAUC, V):
 	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
-	print(labels.sort_values(['Cluster','Accuracy'], ascending=[True,False]))
 	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
 	labels_=pd.DataFrame(columns=labels.columns)
 	for a in maxRankLabels:
@@ -186,15 +182,16 @@ for dataset, n_clusters in datasets:
 	print(title)
 	print("")	
 
-	# Cria DataFrame com os valores de X e o cluster Y
-	db, X, Y, attr_names, normalBD = importBD(dataset)
+	# Cria DataFrame com os valores de X,  o cluster Y e X normalizado
+	# retorna o array de nomes da bd
+	db, X, Y, normalBD, attr_names = importBD(dataset)
+
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
 	for attr in attr_names:
-		#y = attr
-		y = normalBD.loc[:,attr].to_numpy()
-		x = normalBD.drop(attr, axis=1).to_numpy()
+		y = normalBD.loc[:,attr]
+		x = normalBD.drop(attr, axis=1)
 		
 
 		# Treina o modelo de regressão 
@@ -202,8 +199,9 @@ for dataset, n_clusters in datasets:
 		
 		#plotRegression(cluster.drop(attr, axis=1).to_numpy(),cluster.loc[:,attr].to_numpy(), svr_rbf, attr)
 
+		#attr, y_test, y_pre, clust
 		# Dataframe : {y_real, y_Predicted, Cluster, Erro}
-		y_ = result(normalBD[attr], normalBD.loc[X.index, attr], y_Predicted, Y)
+		y_ = result(normalBD[attr], y, y_Predicted, Y)
 		#plotPrediction(attr, y_)
 		
 		# Calcula o erro do attr sob a faixa toda
