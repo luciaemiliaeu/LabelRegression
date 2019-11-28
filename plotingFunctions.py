@@ -24,15 +24,18 @@ def plotRegression(X, y, svr, attr):
 	plt.title(attr)
 
 def plotPrediction(attrName, predictions):
-	num_cluster = np.unique(predictions.loc[:,'Cluster'].to_numpy()).shape[0]
-	fig, axes = plt.subplots(nrows=num_cluster, ncols=1)
-	fig.suptitle(attrName)
 
+	clusters = np.unique(predictions.loc[:,'Cluster'].to_numpy())
+	fig, axes = plt.subplots(nrows=clusters.shape[0], ncols=1)
+	fig.suptitle(attrName)
+	ax = 0
 	# Dataframe : {y_real, y_Predicted, Cluster, Erro}
-	for grupo, values in predictions.groupby(['Cluster']):
+	for i in clusters:
+		values = predictions[(predictions['Cluster']==i)]
 		values = values.sort_values(by=attrName)
 		values = values[['Actual', 'Predicted', 'Erro']]			
-		values.plot(kind = 'bar', ax=axes[grupo-1], title=('Classe '+str(grupo)))
+		values.plot(kind = 'bar', ax=axes[ax], title=('Classe '+str(i)))
+		ax += 1
 
 def plotResults(baseTitle, results, polis, intersec):
 
