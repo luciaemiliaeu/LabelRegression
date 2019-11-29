@@ -179,6 +179,23 @@ def partitionDBbyAttr(X_test, X_train, attr):
 	
 	return x_test, x_train, attr_test, attr_train
 
+def training(normalBD, Y, attr_names,  pct):
+	# Cria DataFrame da bd normalizada em treino e teste
+	X_test, X_train, y_test, y_train = partitionDB(normalBD, Y, pct)
+
+	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
+	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
+
+	for attr in attr_names:		
+		x_test, x_train, attr_test, attr_train = partitionDBbyAttr(X_test, X_train, attr)
+		
+		# Treina o modelo de regressão 
+		model, y_Predicted = trainModel(x_train.to_numpy(), attr_train.to_numpy(), x_test.to_numpy())
+		# calcula o erro
+		rsme = sqrt(mean_squared_error(y_Predicted, attr_test))
+	return (model, rsme)
+		
+
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
 	title = dataset.split('/')[2].split('.')[0]+' dataset'
@@ -189,6 +206,13 @@ for dataset, n_clusters in datasets:
 	# Cria DataFrame com os valores de X,  o cluster Y e X normalizado
 	# retorna o array de nomes da bd
 	db, X, Y, normalBD, attr_names = importBD(dataset)
+
+	r = []
+	for i in range(10):
+		r.append(training(normalBD, Y, attr_names,  0.33))
+
+	print(r)
+	'''
 	# Cria DataFrame da bd normalizada em treino e teste
 	X_test, X_train, y_test, y_train = partitionDB(normalBD, Y, 0.33)
 
@@ -221,5 +245,5 @@ for dataset, n_clusters in datasets:
 
 	print(label)
 	print(result)
-	#plotResults(title, real_error, poly, inter_points)
-plt.show()
+	plotResults(title, real_error, poly, inter_points)
+plt.show()'''
