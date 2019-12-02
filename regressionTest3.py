@@ -1,16 +1,19 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import statistics
 import scipy.integrate as integrate
-from math import sqrt
 from itertools import combinations
 from scipy.optimize import fsolve
-from sklearn.preprocessing import minmax_scale
+
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from plotingFunctions import plotRegression, plotPrediction, plotResults
+from sklearn.model_selection import GridSearchCV
+from regressionModel import trainingModels, importBD
 
-datasets = [("./databases/vidros.csv",3)]
+datasets = [("./databases/iris.csv",3)]
+
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
 
@@ -84,31 +87,6 @@ def intersections(polynomials, minMax):
 		points = [i[0] for i in x if i[1]==attr and clt in i[2]]
 		x_intersec.append((points, attr, clt))
 	return x_intersec
-	
-def partitionDB(X, Y, test_size):
-	X_test = X.sample(frac=test_size)
-	y_test = Y.loc[X_test.index]
-	
-	X_train = X.drop(X_test.index)
-	y_train = Y.loc[X_train.index]	
-	
-	return X_test, X_train, y_test, y_train
-
-def importBD(path):
-	dataset = pd.read_csv(path, sep=',',parse_dates=True)
-	Y = dataset.loc[:,'classe']
-	X = dataset.drop('classe', axis=1)
-	attr_names = X.columns
-	normalBD = pd.DataFrame(X.apply(minmax_scale).to_numpy(), columns = attr_names)
-
-	return dataset, X, Y, normalBD, attr_names
-
-def trainModel(X_train, y_train, X_test ):
-	model = SVR(kernel='linear', C=100, gamma='auto')
-	model.fit(X_train,y_train)
-	y_predicted = model.fit(X_train,y_train).predict(X_test)
-	return model, y_predicted
-
 
 def result(attr, y_test, y_Predicted, cluster):
 	# y_ : {y_real, y_Predicted, Cluster, Erro}
@@ -169,33 +147,7 @@ def LabelAccuracy(label, data):
 		labelsEval.loc[labelsEval.shape[0],:] = [clt, data_.shape[0]/total]
 		frames = pd.concat([frames,data_])
 	return labelsEval, frames
-
-def partitionDBbyAttr(X_test, X_train, attr):
-	attr_train = X_train.loc[:,attr]
-	attr_test = X_test.loc[:,attr]
-
-	x_train = X_train.drop(attr, axis=1)
-	x_test = X_test.drop(attr, axis=1)
-	
-	return x_test, x_train, attr_test, attr_train
-
-def training(normalBD, Y, attr_names,  pct):
-	# Cria DataFrame da bd normalizada em treino e teste
-	X_test, X_train, y_test, y_train = partitionDB(normalBD, Y, pct)
-
-	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
-	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
-
-	for attr in attr_names:		
-		x_test, x_train, attr_test, attr_train = partitionDBbyAttr(X_test, X_train, attr)
 		
-		# Treina o modelo de regressão 
-		model, y_Predicted = trainModel(x_train.to_numpy(), attr_train.to_numpy(), x_test.to_numpy())
-		# calcula o erro
-		rsme = sqrt(mean_squared_error(y_Predicted, attr_test))
-	return (model, rsme)
-		
-
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
 	title = dataset.split('/')[2].split('.')[0]+' dataset'
@@ -207,15 +159,8 @@ for dataset, n_clusters in datasets:
 	# retorna o array de nomes da bd
 	db, X, Y, normalBD, attr_names = importBD(dataset)
 
-	r = []
-	for i in range(10):
-		r.append(training(normalBD, Y, attr_names,  0.33))
-
-	print(r)
-	'''
-	# Cria DataFrame da bd normalizada em treino e teste
-	X_test, X_train, y_test, y_train = partitionDB(normalBD, Y, 0.33)
-
+	models = trainingModels(Y, normalBD, attr_names, 10)
+	print(models)
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
@@ -246,4 +191,4 @@ for dataset, n_clusters in datasets:
 	print(label)
 	print(result)
 	plotResults(title, real_error, poly, inter_points)
-plt.show()'''
+plt.show()
