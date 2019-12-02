@@ -193,7 +193,6 @@ for dataset, n_clusters in datasets:
 		y = normalBD.loc[:,attr]
 		x = normalBD.drop(attr, axis=1)
 		
-
 		# Treina o modelo de regressão 
 		model, y_Predicted = trainModel(x, y, x)
 		

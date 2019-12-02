@@ -6,13 +6,14 @@ import scipy.integrate as integrate
 from itertools import combinations
 from scipy.optimize import fsolve
 
+from sklearn.preprocessing import minmax_scale
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from plotingFunctions import plotRegression, plotPrediction, plotResults
 from sklearn.model_selection import GridSearchCV
-from regressionModel import trainingModels, importBD
+from regressionModel import trainingModels
 
-datasets = [("./databases/iris.csv",3)]
+datasets = [("./databases/iris.csv",4)]
 
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
@@ -28,13 +29,14 @@ def AUC(a, b, func):
 	return auc
 
 def calAUCRange(label, faixas, poli):	
+	
 	finalLabel = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 	for attr, data in label.groupby(['Atributo']):
 		faixas_ = [i[0] for i in faixas if i[1] == attr][0]
 		poli_ = [i[0] for i in poli if i[1] == attr][0]
-		
-		erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
+
 		for i in range(len(faixas_)-1):
+			erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 			inicio = faixas_[i]
 			fim = faixas_[i+1]
 			clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].to_numpy()
@@ -42,16 +44,16 @@ def calAUCRange(label, faixas, poli):
 				erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
 			
 			eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
-			clusterFinal = erroFaixa[(erroFaixa['AUC']) == eminimo]
-			
-			if not clusterFinal.empty:
-				if not finalLabel[(finalLabel['Atributo'] == attr)].empty:
-					if finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] == clusterFinal['min_faixa'].to_numpy()[0] and finalLabel.loc[finalLabel.shape[0]-1,'Cluster'] == clusterFinal['Cluster'].to_numpy()[0]:
-						finalLabel.loc[finalLabel.shape[0]-1,'max_faixa'] = clusterFinal['max_faixa'].to_numpy()[0]
-						finalLabel.loc[finalLabel.shape[0]-1,'AUC'] = (finalLabel.loc[finalLabel.shape[0]-1,'AUC'] + clusterFinal['AUC'].to_numpy()[0])
-					else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.to_numpy()[0]
-				else: finalLabel.loc[finalLabel.shape[0],:] = clusterFinal.to_numpy()[0]
-		
+			clusterFinal = erroFaixa[(erroFaixa['AUC']) <= eminimo + (0.1*eminimo)]
+			for i in clusterFinal['Cluster'].values:
+				min_ = clusterFinal[(clusterFinal['Cluster']==i)]['min_faixa'].values
+				max_ = clusterFinal[(clusterFinal['Cluster']==i)]['max_faixa'].values
+				auc = clusterFinal[(clusterFinal['Cluster']==i)]['AUC'].values
+				if not finalLabel[(finalLabel['Cluster']==i) & (finalLabel['Atributo']==attr) & (finalLabel['max_faixa']==min_[0])].empty:
+					finalLabel.loc[finalLabel[(finalLabel['Cluster']==i) & (finalLabel['Atributo']==attr) & (finalLabel['max_faixa']==min_[0])].index, 'AUC'] += auc[0]	
+					finalLabel.loc[finalLabel[(finalLabel['Cluster']==i) & (finalLabel['Atributo']==attr) & (finalLabel['max_faixa']==min_[0])].index, 'max_faixa'] = max_[0]
+				else:
+					finalLabel.loc[finalLabel.shape[0],:] = clusterFinal[(clusterFinal['Cluster']==i)].values
 	return finalLabel
 
 def findIntersection(fun1,fun2,x0):	
@@ -147,7 +149,16 @@ def LabelAccuracy(label, data):
 		labelsEval.loc[labelsEval.shape[0],:] = [clt, data_.shape[0]/total]
 		frames = pd.concat([frames,data_])
 	return labelsEval, frames
-		
+
+def importBD(path):
+	dataset = pd.read_csv(path, sep=',',parse_dates=True)
+	Y = dataset.loc[:,'classe']
+	X = dataset.drop('classe', axis=1)
+	attr_names = X.columns
+	normalBD = pd.DataFrame(X.apply(minmax_scale).to_numpy(), columns = attr_names)
+
+	return dataset, X, Y, normalBD, attr_names
+
 for dataset, n_clusters in datasets:
 	# Extrai o nome da base de dados
 	title = dataset.split('/')[2].split('.')[0]+' dataset'
@@ -160,32 +171,38 @@ for dataset, n_clusters in datasets:
 	db, X, Y, normalBD, attr_names = importBD(dataset)
 
 	models = trainingModels(Y, normalBD, attr_names, 10)
-	print(models)
+	
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
 	for attr in attr_names:
-		
-		x_test, x_train, attr_test, attr_train = partitionDBbyAttr(X_test, X_train, attr)
+		y = normalBD[attr]
+		x = normalBD.drop(attr, axis=1)
 		
 		# Treina o modelo de regressão 
-		model, y_Predicted = trainModel(x_train.to_numpy(), attr_train.to_numpy(), x_test.to_numpy())
+		model = [x[1] for x in models.models[0] if x[0] == attr][0]
+		y_Predicted = model.predict(x)
 		#plotRegression(x_test,attr_test, model, attr)
 
 		# y_ : {y_real, y_Predicted, Cluster, Erro}
-		y_ = result(normalBD[attr], attr_test, y_Predicted, Y)
+		y_ = result(normalBD[attr], y, y_Predicted, Y)
 		#plotPrediction(attr, y_)	
 		
 		for clt, data in y_.groupby(['Cluster']):
 			for out, values in data.groupby([attr]):
 				real_error.loc[real_error.shape[0],:] = [clt, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]
-			rsme = sqrt(mean_squared_error(data.loc[:,'Predicted'], data.loc[:,'Actual']))
+			rsme = mean_squared_error(data['Predicted'], data['Actual'])
 			range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
 	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
-	
-	rangeAUC = calAUCRange(range_error, points, poly)
-	label = calLabel(rangeAUC, 0.1)
+	all_points = []
+	for i in points:
+		p = [x[0] for x in inter_points if x[1]==i[1]]
+		a = [x for xs in p for x in xs]
+		all_points.append((np.unique(np.sort(i[0]+a)), i[1]))
+		
+	rangeAUC = calAUCRange(range_error, all_points, poly)
+	label = calLabel(rangeAUC, 0.05)
 	result, frames = LabelAccuracy(label, db)
 
 	print(label)
