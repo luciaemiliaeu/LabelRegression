@@ -11,7 +11,9 @@ from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from plotingFunctions import plotRegression, plotPrediction, plotResults
 from sklearn.model_selection import GridSearchCV
+
 from regressionModel import trainingModels
+from rotulate import calLabel, LabelAccuracy
 
 datasets = [("./databases/iris.csv",4)]
 
@@ -118,37 +120,13 @@ def rangePatition(error, label, attr_names ):
 	
 	# todos os pontos "de corte" de um attr: pontos de interseção e pontos de início e fim de faixa
 	# ([pontos], attr)
-	points = []
-	for range_, inter in zip(ranges, inter_points):
-		points.append((np.sort(np.unique(range_[0] + inter[0])).tolist(), range_[1]))
+	all_points = []
+	for i in ranges:
+		p = [x[0] for x in inter_points if x[1]==i[1]]
+		a = [x for xs in p for x in xs]
+		all_points.append((np.unique(np.sort(i[0]+a)), i[1]))
 	
-	return polynomials, points, intersec
-
-def calAccuracyRange(info, data):
-	data_ = data[(data['classe'] == info['Cluster'])][info['Atributo']].to_numpy().tolist()
-	acertos = [x for x in data_ if x>=info['min_faixa'] and x<=info['max_faixa']]
-	return len(acertos) / len(data_)
-	
-def calLabel(rangeAUC, V):
-	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
-	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
-	labels_=pd.DataFrame(columns=labels.columns)
-	for a in maxRankLabels:
-		l = labels[(labels['Cluster']==a[0])]
-		labels_ = pd.concat([labels_, l[(l['Accuracy']>= a[1]-V)]])
-	return labels_
-
-def LabelAccuracy(label, data):
-	labelsEval = pd.DataFrame(columns=['Cluster', 'Accuracy'])
-	frames = pd.DataFrame(columns=data.columns)
-	for clt, values in label.groupby(['Cluster']):
-		data_ = data[(data['classe'] == clt)]
-		total = data_.shape[0]
-		for attr, regra in values.groupby('Atributo'):
-			data_ = data_[(data_[regra['Atributo']].to_numpy()>= regra['min_faixa'].to_numpy()) & (data_[regra['Atributo']].to_numpy()<= regra['max_faixa'].to_numpy())]#[regra['Atributo']].to_numpy()
-		labelsEval.loc[labelsEval.shape[0],:] = [clt, data_.shape[0]/total]
-		frames = pd.concat([frames,data_])
-	return labelsEval, frames
+	return polynomials, all_points, intersec
 
 def importBD(path):
 	dataset = pd.read_csv(path, sep=',',parse_dates=True)
@@ -195,14 +173,10 @@ for dataset, n_clusters in datasets:
 			range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
 	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
-	all_points = []
-	for i in points:
-		p = [x[0] for x in inter_points if x[1]==i[1]]
-		a = [x for xs in p for x in xs]
-		all_points.append((np.unique(np.sort(i[0]+a)), i[1]))
-		
-	rangeAUC = calAUCRange(range_error, all_points, poly)
-	label = calLabel(rangeAUC, 0.05)
+	
+	rangeAUC = calAUCRange(range_error, points, poly)
+	
+	label = calLabel(rangeAUC, 0.05, db)
 	result, frames = LabelAccuracy(label, db)
 
 	print(label)
