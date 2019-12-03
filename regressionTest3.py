@@ -13,7 +13,7 @@ from plotingFunctions import plotRegression, plotPrediction, plotResults
 from sklearn.model_selection import GridSearchCV
 
 from regressionModel import trainingModels
-from rotulate import calLabel, LabelAccuracy
+from rotulate import calLabel
 
 datasets = [("./databases/iris.csv",4)]
 
@@ -173,13 +173,11 @@ for dataset, n_clusters in datasets:
 			range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
 	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
-	
-	rangeAUC = calAUCRange(range_error, points, poly)
-	
-	label = calLabel(rangeAUC, 0.05, db)
-	result, frames = LabelAccuracy(label, db)
+	plotResults(title, real_error, poly, inter_points)
 
+	rangeAUC = calAUCRange(range_error, points, poly)
+	result, label = calLabel(rangeAUC, 0.05, db)
 	print(label)
 	print(result)
-	plotResults(title, real_error, poly, inter_points)
+	
 plt.show()

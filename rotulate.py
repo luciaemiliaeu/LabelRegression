@@ -1,27 +1,38 @@
 import numpy as np 
 import pandas as pd
 
-def calAccuracyRange(info, data):
-	data_ = data[(data['classe'] == info['Cluster'])][info['Atributo']].to_numpy().tolist()
+def calAccuracyRange(info, data, classe):
+	data_ = data[(data['classe'] == classe)][info['Atributo']].values
 	acertos = [x for x in data_ if x>=info['min_faixa'] and x<=info['max_faixa']]
 	return len(acertos) / len(data_)
 	
 def calLabel(rangeAUC, V, db):
-	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db), axis=1))
-	maxRankLabels = [(c, i.max()['Accuracy']) for c, i in labels.groupby(['Cluster'])]
-	labels_=pd.DataFrame(columns=labels.columns)
-	for a in maxRankLabels:
-		labels_ = pd.concat([labels_, labels[(labels['Accuracy']>= a[1]-V) & (labels['Cluster']==a[0])]])
-	return labels_
+	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
+	rotulo = pd.DataFrame(columns = labels.columns)
+	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
+	for i in db['classe'].unique():
+		done = True 
+		attrs = labels[(labels['Cluster']==i)]
+		idx = attrs.index.values.tolist()
+		rc = rotulo[(rotulo['Cluster']==i)]
+		
+		while done and idx:			
+			rc = pd.concat([rc, attrs[(attrs.index==idx.pop(0))]], sort=False)
+			acc = acertoRotulo(rc, db)
+			c_ = [x[1] for x in acc if x[0]==i]
+			other_c = [x[1] for x in acc if x[0]!=i]
+			if all([x<=0.2 for x in other_c]): 
+				done = False
+		result.loc[result.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
+		rotulo = pd.concat([rotulo, rc], sort=False)
+	return result, rotulo
 
-def LabelAccuracy(label, data):
-	labelsEval = pd.DataFrame(columns=['Cluster', 'Accuracy'])
-	frames = pd.DataFrame(columns=data.columns)
-	for clt, values in label.groupby(['Cluster']):
+def acertoRotulo(rotulo, data):
+	acerto = []
+	for clt in data['classe'].unique():
 		data_ = data[(data['classe'] == clt)]
 		total = data_.shape[0]
-		for attr, regra in values.groupby('Atributo'):
-			data_ = data_[(data_[regra['Atributo']].to_numpy()>= regra['min_faixa'].to_numpy()) & (data_[regra['Atributo']].to_numpy()<= regra['max_faixa'].to_numpy())]#[regra['Atributo']].to_numpy()
-		labelsEval.loc[labelsEval.shape[0],:] = [clt, data_.shape[0]/total]
-		frames = pd.concat([frames,data_])
-	return labelsEval, frames
+		for attr, regra in rotulo.groupby('Atributo'):
+			data_ = data_[(data_[attr].to_numpy()>= regra['min_faixa'].to_numpy()) & (data_[attr].to_numpy()<= regra['max_faixa'].to_numpy())]
+		acerto.append((clt, data_.shape[0]/total))
+	return(acerto)
