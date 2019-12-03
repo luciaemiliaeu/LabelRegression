@@ -15,13 +15,13 @@ def calLabel(rangeAUC, V, db):
 		attrs = labels[(labels['Cluster']==i)]
 		idx = attrs.index.values.tolist()
 		rc = rotulo[(rotulo['Cluster']==i)]
-		
+		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
 		while done and idx:			
 			rc = pd.concat([rc, attrs[(attrs.index==idx.pop(0))]], sort=False)
 			acc = acertoRotulo(rc, db)
 			c_ = [x[1] for x in acc if x[0]==i]
 			other_c = [x[1] for x in acc if x[0]!=i]
-			if all([x<=0.2 for x in other_c]): 
+			if all([x<=V for x in other_c]): 
 				done = False
 		result.loc[result.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
 		rotulo = pd.concat([rotulo, rc], sort=False)

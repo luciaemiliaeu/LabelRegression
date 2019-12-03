@@ -176,7 +176,7 @@ for dataset, n_clusters in datasets:
 	plotResults(title, real_error, poly, inter_points)
 
 	rangeAUC = calAUCRange(range_error, points, poly)
-	result, label = calLabel(rangeAUC, 0.05, db)
+	result, label = calLabel(rangeAUC, 0.2, db)
 	print(label)
 	print(result)
 	
