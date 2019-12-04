@@ -15,7 +15,7 @@ from sklearn.model_selection import GridSearchCV
 from regressionModel import trainingModels
 from rotulate import calLabel
 
-datasets = [("./databases/iris.csv",4)]
+datasets = [("./databases/vidros.csv",4)]
 
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
@@ -30,7 +30,7 @@ def AUC(a, b, func):
 	auc, err = integrate.quad(np.poly1d(func[0]),a, b)
 	return auc
 
-def calAUCRange(label, faixas, poli):	
+def calAUCRange(label, faixas, poli, lim):	
 	
 	finalLabel = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 	for attr, data in label.groupby(['Atributo']):
@@ -46,7 +46,7 @@ def calAUCRange(label, faixas, poli):
 				erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
 			
 			eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
-			clusterFinal = erroFaixa[(erroFaixa['AUC']) <= eminimo + (0.1*eminimo)]
+			clusterFinal = erroFaixa[(erroFaixa['AUC']) <= eminimo + (lim*eminimo)]
 			for i in clusterFinal['Cluster'].values:
 				min_ = clusterFinal[(clusterFinal['Cluster']==i)]['min_faixa'].values
 				max_ = clusterFinal[(clusterFinal['Cluster']==i)]['max_faixa'].values
@@ -176,7 +176,7 @@ for dataset, n_clusters in datasets:
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
 	plotResults(title, real_error, poly, inter_points)
 
-	rangeAUC = calAUCRange(range_error, points, poly)
+	rangeAUC = calAUCRange(range_error, points, poly, 0.2)
 	result, label = calLabel(rangeAUC, 0.2, db)
 	print(label)
 	print(result)
