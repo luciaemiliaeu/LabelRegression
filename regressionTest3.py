@@ -148,12 +148,13 @@ for dataset, n_clusters in datasets:
 	# retorna o array de nomes da bd
 	db, X, Y, normalBD, attr_names = importBD(dataset)
 
-	models = trainingModels(Y, normalBD, attr_names, 10)
+	models = trainingModels(Y, normalBD, attr_names, 2)
 	
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
 	for attr in attr_names:
+		
 		y = normalBD[attr]
 		x = normalBD.drop(attr, axis=1)
 		

@@ -11,18 +11,19 @@ def calLabel(rangeAUC, V, db):
 	rotulo = pd.DataFrame(columns = labels.columns)
 	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
 	for i in db['classe'].unique():
-		done = True 
-		attrs = labels[(labels['Cluster']==i)]
-		idx = attrs.index.values.tolist()
+		attrs_cluster = labels[(labels['Cluster']==i)]
+		idx = attrs_cluster.index.values.tolist()
 		rc = rotulo[(rotulo['Cluster']==i)]
+		
 		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
-		while done and idx:			
-			rc = pd.concat([rc, attrs[(attrs.index==idx.pop(0))]], sort=False)
+		repit = True 
+		while repit:			
+			rc = pd.concat([rc, attrs_cluster[(attrs_cluster.index==idx.pop(0))]], sort=False)
 			acc = acertoRotulo(rc, db)
 			c_ = [x[1] for x in acc if x[0]==i]
 			other_c = [x[1] for x in acc if x[0]!=i]
-			if all([x<=V for x in other_c]): 
-				done = False
+			if all([x<=V for x in other_c]) or not idx: 
+				repit = False
 		result.loc[result.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
 		rotulo = pd.concat([rotulo, rc], sort=False)
 	return result, rotulo
@@ -32,7 +33,7 @@ def acertoRotulo(rotulo, data):
 	for clt in data['classe'].unique():
 		data_ = data[(data['classe'] == clt)]
 		total = data_.shape[0]
-		for attr, regra in rotulo.groupby('Atributo'):
-			data_ = data_[(data_[attr].to_numpy()>= regra['min_faixa'].to_numpy()) & (data_[attr].to_numpy()<= regra['max_faixa'].to_numpy())]
+		for index, row in rotulo.iterrows():
+			data_ = data_[(data_[row['Atributo']]>= row['min_faixa']) & (data_[row['Atributo']]<= row['max_faixa'])]
 		acerto.append((clt, data_.shape[0]/total))
 	return(acerto)
