@@ -41,8 +41,11 @@ def acertoRotulo(rotulo, data):
 		data_ = data[(data['classe'] == clt)]
 		print('tamanho da classe ', clt, data_.shape)
 		total = data_.shape[0]
-		for index, row in rotulo.iterrows():
-			data_ = data_[(data_[row['Atributo']]>= row['min_faixa']) & (data_[row['Atributo']]<= row['max_faixa'])]
+		for attr, regras in rotulo.groupby(['Atributo']):
+			x = pd.DataFrame(columns = data_.columns)
+			for index, row in regras.iterrows():
+				x = pd.concat([x,  data_[(data_[attr]>= row['min_faixa']) & (data_[attr]<= row['max_faixa'])]])
+			data_ = x
 			print('obecedem a regra ', row['Atributo'], ' ', data_.shape)
 		acerto.append((clt, data_.shape[0]/total))
 	return(acerto)

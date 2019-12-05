@@ -15,7 +15,7 @@ from sklearn.model_selection import GridSearchCV
 from regressionModel import trainingModels
 from rotulate import calLabel
 
-datasets = [("./databases/vidros.csv",4)]
+datasets = [("./databases/modelo2.csv",4)]
 
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
