@@ -173,6 +173,7 @@ for dataset, n_clusters in datasets:
 			rsme = mean_squared_error(data['Predicted'], data['Actual'])
 			range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
 		plotPredictionMean(attr, real_error)
+	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
 	plotResults(title, real_error, poly, inter_points)
 
