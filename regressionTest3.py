@@ -153,6 +153,7 @@ for dataset, n_clusters in datasets:
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 	range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
+	yy = pd.DataFrame(columns= ['Actual', 'Predicted', 'Atributo','Cluster', 'Erro', 'Saida'])
 	for attr in attr_names:
 		
 		y = normalBD[attr]
@@ -161,21 +162,23 @@ for dataset, n_clusters in datasets:
 		# Treina o modelo de regressão 
 		model = [x[1] for x in models.models[0] if x[0] == attr][0]
 		y_Predicted = model.predict(x)
-		plotRegression(x,y, model, attr)
+		#plotRegression(x,y, model, attr)
 
 		# y_ : {y_real, y_Predicted, Cluster, Erro}
 		y_ = result(normalBD[attr], y, y_Predicted, Y)
-		plotPrediction(attr, y_)	
+
+		yy = pd.concat([yy, y_[['Actual', 'Predicted', 'Cluster', 'Erro']].assign(Atributo=attr).assign(Saida = lambda x:X.loc[x.index, attr])], sort=True)
+		#plotPrediction(attr, y_)	
 		
 		for clt, data in y_.groupby(['Cluster']):
 			for out, values in data.groupby([attr]):
 				real_error.loc[real_error.shape[0],:] = [clt, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]
 			rsme = mean_squared_error(data['Predicted'], data['Actual'])
 			range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
-		plotPredictionMean(attr, real_error)
+		#plotPredictionMean(attr, real_error)
 	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
-	plotResults(title, real_error, poly, inter_points)
+	plotResults(title, real_error, poly, inter_points, yy)
 
 	rangeAUC = calAUCRange(range_error, points, poly, 0.2)
 	result, label = calLabel(rangeAUC, 0.2, db)
