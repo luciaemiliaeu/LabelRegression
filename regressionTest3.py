@@ -9,13 +9,13 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
-from plotingFunctions import plotRegression, plotPrediction, plotResults
+from plotingFunctions import plotRegression, plotPrediction, plotResults, plotPredictionMean
 from sklearn.model_selection import GridSearchCV
 
 from regressionModel import trainingModels
 from rotulate import calLabel
 
-datasets = [("./databases/modelo2.csv",4)]
+datasets = [("./databases/iris.csv",4)]
 
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
@@ -161,18 +161,18 @@ for dataset, n_clusters in datasets:
 		# Treina o modelo de regressão 
 		model = [x[1] for x in models.models[0] if x[0] == attr][0]
 		y_Predicted = model.predict(x)
-		#plotRegression(x_test,attr_test, model, attr)
+		plotRegression(x,y, model, attr)
 
 		# y_ : {y_real, y_Predicted, Cluster, Erro}
 		y_ = result(normalBD[attr], y, y_Predicted, Y)
-		#plotPrediction(attr, y_)	
+		plotPrediction(attr, y_)	
 		
 		for clt, data in y_.groupby(['Cluster']):
 			for out, values in data.groupby([attr]):
 				real_error.loc[real_error.shape[0],:] = [clt, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]
 			rsme = mean_squared_error(data['Predicted'], data['Actual'])
 			range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
-	
+		plotPredictionMean(attr, real_error)
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
 	plotResults(title, real_error, poly, inter_points)
 

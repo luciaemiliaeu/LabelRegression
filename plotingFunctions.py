@@ -32,7 +32,7 @@ def plotPrediction(attrName, predictions):
 	# Dataframe : {y_real, y_Predicted, Cluster, Erro}
 	for i in clusters:
 		values = predictions[(predictions['Cluster']==i)]
-		values = values.sort_values(by=attrName)
+		values = values.sort_values(by='Actual')
 		values = values[['Actual', 'Predicted', 'Erro']]			
 		values.plot(kind = 'bar', ax=axes[ax], title=('Classe '+str(i)))
 		ax += 1
@@ -62,7 +62,19 @@ def plotResults(baseTitle, results, polis, intersec):
 			
 			plt.plot(xx, yy , label='Cluster' +str(cluster))
 			plt.legend()
-	
+
+def plotPredictionMean(attrName, predictions):
+	clusters = np.unique(predictions.loc[:,'Cluster'].to_numpy())
+	fig, axes = plt.subplots(nrows=clusters.shape[0], ncols=1)
+	fig.suptitle(attrName)
+	ax = 0
+	# Dataframe : {y_real, y_Predicted, Cluster, Erro}
+	for i in clusters:
+		values = predictions[(predictions['Cluster']==i)]
+		values = values.sort_values(by='Saida')
+		values[['Erro']].plot(kind='bar',ax=axes[ax], title=('Classe '+str(i)), xticks = values.Saida)
+		ax += 1
+
 '''def plotResults(baseTitle, results):
 
 	for attr, data in results.groupby(['Atributo']):
