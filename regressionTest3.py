@@ -9,13 +9,14 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
-from plotingFunctions import plotRegression, plotPrediction, plotResults, plotPredictionMean
+from plotingFunctions import plotPointsMean, plotCurvesPointsMean, plotCurves, plotIntersec, plotPoints, plotResults, plotAUC, plotPoints, plotPointsCurve, plotRegression, plotPrediction, plotPredictionMean, plotLimitePoints,plotData
+
 from sklearn.model_selection import GridSearchCV
 
 from regressionModel import trainingModels
 from rotulate import calLabel
 
-datasets = [("./databases/iris.csv",4)]
+datasets = [("./databases/modelo2.csv",4)]
 
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 
@@ -147,7 +148,8 @@ for dataset, n_clusters in datasets:
 	# Cria DataFrame com os valores de X,  o cluster Y e X normalizado
 	# retorna o array de nomes da bd
 	db, X, Y, normalBD, attr_names = importBD(dataset)
-
+	#print(db['classe'].unique())
+	plotData(db)
 	models = trainingModels(Y, normalBD, attr_names, 2)
 	
 	real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
@@ -178,11 +180,26 @@ for dataset, n_clusters in datasets:
 		#plotPredictionMean(attr, real_error)
 	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
-	plotResults(title, real_error, poly, inter_points, yy)
+	print(points)
 
 	rangeAUC = calAUCRange(range_error, points, poly, 0.2)
+	print(rangeAUC)
+	
+	plotLimitePoints(real_error, poly, rangeAUC, yy)
+	
+	plotPointsMean(real_error, yy)
+	plotCurvesPointsMean(real_error, poly, yy)
+	plotCurves(real_error, poly)
+	plotIntersec(real_error, poly, inter_points)
+
+	plotResults(title, real_error, poly, inter_points, yy)
+	plotAUC(real_error, poly, rangeAUC)
+	plotPoints(real_error,yy)
+	plotPointsCurve(real_error, poly, inter_points, yy)
+	
 	result, label = calLabel(rangeAUC, 0.2, db)
+
 	print(label)
 	print(result)
 	
-plt.show()
+#plt.show()

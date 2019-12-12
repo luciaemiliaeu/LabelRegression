@@ -8,7 +8,6 @@ def calAccuracyRange(info, data, classe):
 	
 def calLabel(rangeAUC, V, db):
 	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
-	print(labels)
 	rotulo = pd.DataFrame(columns = labels.columns)
 	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
 	for i in db['classe'].unique():
@@ -39,13 +38,11 @@ def acertoRotulo(rotulo, data):
 	print(rotulo)
 	for clt in data['classe'].unique():
 		data_ = data[(data['classe'] == clt)]
-		print('tamanho da classe ', clt, data_.shape)
 		total = data_.shape[0]
 		for attr, regras in rotulo.groupby(['Atributo']):
 			x = pd.DataFrame(columns = data_.columns)
 			for index, row in regras.iterrows():
 				x = pd.concat([x,  data_[(data_[attr]>= row['min_faixa']) & (data_[attr]<= row['max_faixa'])]])
 			data_ = x
-			print('obecedem a regra ', row['Atributo'], ' ', data_.shape)
 		acerto.append((clt, data_.shape[0]/total))
 	return(acerto)
