@@ -9,8 +9,7 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
-from plotingFunctions import plotPointsMean, plotCurvesPointsMean, plotCurves, plotIntersec, plotPoints, plotResults, plotAUC, plotPoints, plotPointsCurve, plotRegression, plotPrediction, plotPredictionMean, plotLimitePoints,plotData
-
+from plotingFunctions import plotPointsMean, plotCurvesPointsMean, plotCurves, plotIntersec, plotPoints, plotResults, plotAUC, plotPoints, plotPointsCurve, plotRegression, plotPrediction, plotPredictionMean, plotLimitePoints,plotData, render_mpl_table
 from sklearn.model_selection import GridSearchCV
 
 from regressionModel import trainingModels
@@ -180,12 +179,11 @@ for dataset, n_clusters in datasets:
 		#plotPredictionMean(attr, real_error)
 	
 	poly, points, inter_points = rangePatition(real_error, range_error, attr_names)
-	print(points)
 
 	rangeAUC = calAUCRange(range_error, points, poly, 0.2)
 	print(rangeAUC)
 	
-	plotLimitePoints(real_error, poly, rangeAUC, yy)
+	'''plotLimitePoints(real_error, poly, rangeAUC, yy)
 	
 	plotPointsMean(real_error, yy)
 	plotCurvesPointsMean(real_error, poly, yy)
@@ -196,10 +194,11 @@ for dataset, n_clusters in datasets:
 	plotAUC(real_error, poly, rangeAUC)
 	plotPoints(real_error,yy)
 	plotPointsCurve(real_error, poly, inter_points, yy)
-	
+	'''
 	result, label = calLabel(rangeAUC, 0.2, db)
 
 	print(label)
 	print(result)
+	#render_mpl_table('accuracy_'+str(title), result, header_columns=0, col_width=2.0)
+	render_mpl_table('label_'+str(title), label, header_columns=0, col_width=2.0)
 	
-#plt.show()
