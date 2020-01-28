@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import regressionTest3
+import RotulatorModel
 from sklearn import metrics
 import warnings
 warnings.filterwarnings("ignore")
@@ -9,7 +9,7 @@ datasets = ['./databases/sementes.csv']
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 for dataset in datasets:
 	
-	r = regressionTest3.Rotulator(dataset)
+	r = RotulatorModel.Rotulator(dataset)
 	label = r.label
 	data = r.db
 	print(label)
