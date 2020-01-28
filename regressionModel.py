@@ -3,64 +3,57 @@ import numpy as np
 import statistics
 from sklearn.svm import SVR
 from sklearn.metrics import mean_squared_error
-
+from sklearn.model_selection import KFold
 
 class trainingModels:
-	def __init__(self, Y, normalBD, attr_names, n_exec):
-	    # salava os retornos de cada execução: models, erros
-		self.models = []
-		r = []
-		for i in range(n_exec):
-			model, erros = self.training(normalBD, Y, attr_names,  0.33)
-			r += erros
-			self.models.append(model)
-		self.erro_ = [(attr, [x[1] for x in r if x[0]==attr]) for attr in np.unique([x[0] for x in r]).tolist() ]
-		self.mean_error = [(attr, statistics.mean([x[1] for x in r if x[0]==attr])) for attr in np.unique([x[0] for x in r]).tolist()]
-		self.sd_error = [(attr, statistics.stdev([x[1] for x in r if x[0]==attr])) for attr in np.unique([x[0] for x in r]).tolist()]
-		
-		self.r2 = [(attr, [x[2] for x in r if x[0]==attr]) for attr in np.unique([x[0] for x in r]).tolist() ]
-		self.mean_r2 = [(attr, statistics.mean([x[2] for x in r if x[0]==attr])) for attr in np.unique([x[0] for x in r]).tolist()]
-		self.sd_r2 = [(attr, statistics.stdev([x[2] for x in r if x[0]==attr])) for attr in np.unique([x[0] for x in r]).tolist()]
+	def __init__(self, Y, normalBD, attr_names, title):
+		_erros = pd.DataFrame(columns=['attr', 'mean_squared_error', 'r2'])
+		_metrics = pd.DataFrame(columns=['atr', 'metric','mean','sd'])
 
-	def training(self, normalBD, Y, attr_names,  pct):
+		predictions, erros = self.training(normalBD, Y, attr_names)
+		
+		#Cálculo das métricas de avaliação dos modelos de regressão
+		for e in erros:
+			_erros.loc[_erros.shape[0],:] = [e[0], e[1], e[2]]
+		
+		erro_ = [(attr, [x[1] for x in erros if x[0]==attr]) for attr in np.unique([x[0] for x in erros]).tolist() ]
+		mean_error = [(attr, statistics.mean([x[1] for x in erros if x[0]==attr])) for attr in np.unique([x[0] for x in erros]).tolist()]
+		sd_error = [(attr, statistics.stdev([x[1] for x in erros if x[0]==attr])) for attr in np.unique([x[0] for x in erros]).tolist()]
+		for me, sd in zip(mean_error, sd_error):
+			_metrics.loc[_metrics.shape[0],:] = [me[0], 'mean_squared_error', me[1], sd[1]]
+		
+		r2 = [(attr, [x[2] for x in erros if x[0]==attr]) for attr in np.unique([x[0] for x in erros]).tolist() ]
+		mean_r2 = [(attr, statistics.mean([x[2] for x in erros if x[0]==attr])) for attr in np.unique([x[0] for x in erros]).tolist()]
+		sd_r2 = [(attr, statistics.stdev([x[2] for x in erros if x[0]==attr])) for attr in np.unique([x[0] for x in erros]).tolist()]
+		for me, sd in zip(mean_r2, sd_r2):
+			_metrics.loc[_metrics.shape[0],:] = [me[0], 'r2', me[1], sd[1]]
+
+		_erros.to_csv('erroRegression_'+title+'.csv', index=False)
+		_metrics.to_csv('metricsRegression_'+title+'.csv', index=False)
+
+	def training(self, normalBD, Y, attr_names):
 		# Cria DataFrames de treino e teste da bd normalizada 
 		# y: atributo de saída
-		X_test, X_train, y_test, y_train = self.partitionDB(normalBD, Y, pct)
-
-		# Treina os modelos, calcula r2 e RSME
-		models = []
+		kf = KFold(n_splits = 5, shuffle = True, random_state = 2)
+		model = SVR(kernel='linear', C=100, gamma='auto')
+		predict = pd.DataFrame(columns=['index', 'attr', 'predict'])
 		erro_metrics = []
-		for attr in attr_names:		
-			x_test, x_train, attr_test, attr_train = self.partitionDBbyAttr(X_test, X_train, attr)
-			model, y_Predicted = self.trainModel(x_train.to_numpy(), attr_train.to_numpy(), x_test.to_numpy())
-			
-			# Erros
-			r2 = model.score(x_test, attr_test)
-			erro = mean_squared_error(attr_test, y_Predicted)
-			
-			models.append((attr, model))
-			erro_metrics.append((attr, erro, r2))
-		return models, erro_metrics
+		for train, test in kf.split(normalBD):
+			for attr in attr_names:		
+				attr_train = normalBD.loc[train,attr]
+				attr_test = normalBD.loc[test,attr]
+
+				x_train = normalBD.loc[train,:].drop(attr, axis=1)
+				x_test = normalBD.loc[test,:].drop(attr, axis=1)
+
+				model.fit(x_train, attr_train)
+				attr_predicted = model.predict(x_test)
 	
-	def partitionDB(self, X, Y, test_size):
-		X_test = X.sample(frac=test_size)
-		y_test = Y.loc[X_test.index]
-		
-		X_train = X.drop(X_test.index)
-		y_train = Y.loc[X_train.index]	
-		
-		return X_test, X_train, y_test, y_train
+				for index, y in zip(test, attr_predicted):
+					predict.loc[predict.shape[0],:] = [index, attr, y]
 
-	def partitionDBbyAttr(self, X_test, X_train, attr):
-		attr_train = X_train.loc[:,attr]
-		attr_test = X_test.loc[:,attr]
-
-		x_train = X_train.drop(attr, axis=1)
-		x_test = X_test.drop(attr, axis=1)
+				r2 = model.score(x_test, attr_test)
+				erro = mean_squared_error(attr_test, attr_predicted)
+				erro_metrics.append((attr, erro, r2))
 		
-		return x_test, x_train, attr_test, attr_train
-
-	def trainModel(self, X_train, y_train, X_test ):
-		model = SVR(kernel='linear', C=100, gamma='auto').fit(X_train,y_train)
-		y_predicted = model.predict(X_test)
-		return model, y_predicted
+		return predict , erro_metrics

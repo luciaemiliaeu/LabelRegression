@@ -11,7 +11,7 @@ def calLabel(rangeAUC, V, db):
 	rotulo = pd.DataFrame(columns = labels.columns)
 	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
 	for i in db['classe'].unique():
-		print('\n\nCluster '+str(i))
+		#print('\n\nCluster '+str(i))
 		attrs_cluster = labels[(labels['Cluster']==i)]
 		idx = attrs_cluster.index.values.tolist()
 		rc = rotulo[(rotulo['Cluster']==i)]
@@ -21,7 +21,7 @@ def calLabel(rangeAUC, V, db):
 		while repit:			
 			rc = pd.concat([rc, attrs_cluster[(attrs_cluster.index==idx.pop(0))]], sort=False)
 			acc = acertoRotulo(rc, db)
-			print(acc)
+			#print(acc)
 			c_ = [x[1] for x in acc if x[0]==i]
 			other_c = [x[1] for x in acc if x[0]!=i]
 
@@ -33,9 +33,9 @@ def calLabel(rangeAUC, V, db):
 
 def acertoRotulo(rotulo, data):
 	acerto = []
-	print('---------------------------')
-	print('Rotulo')
-	print(rotulo)
+	#print('---------------------------')
+	#print('Rotulo')
+	#print(rotulo)
 	for clt in data['classe'].unique():
 		data_ = data[(data['classe'] == clt)]
 		total = data_.shape[0]

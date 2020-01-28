@@ -21,13 +21,17 @@ datasets = [("./databases/modelo2.csv",4)]
 
 class Rotulator:
 	def __init__(self, dataset):
-		title = dataset.split('/')[2].split('.')[0]+' dataset'
+		title = dataset.split('/')[2].split('.')[0]
 		
 		# Cria DataFrame com os valores de X,  o cluster Y e X normalizado
 		# retorna o array de nomes da bd
 		self.db, X, Y, normalBD, attr_names = self.importBD(dataset)
-		models = trainingModels(Y, normalBD, attr_names, 2)
-		
+		predictions = trainingModels(Y, normalBD, attr_names, title).predictions
+		acuraccyTable = pd.DataFrame(columns=['Cluster', 'Accuracy','iter'])
+		labelsTable = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'iter'])
+
+		count = 1
+
 		real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
 		range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
 
@@ -36,9 +40,7 @@ class Rotulator:
 			
 			y = normalBD[attr]
 			x = normalBD.drop(attr, axis=1)
-			
-			# Treina o modelo de regressão 
-			model = [x[1] for x in models.models[0] if x[0] == attr][0]
+		
 			y_Predicted = model.predict(x)
 			#plotRegression(x,y, model, attr)
 
@@ -54,11 +56,24 @@ class Rotulator:
 				rsme = mean_squared_error(data['Predicted'], data['Actual'])
 				range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
 			#plotPredictionMean(attr, real_error)
-		
-		poly, points, inter_points = self.rangePatition(real_error, range_error, attr_names)
+			
+			poly, points, inter_points = self.rangePatition(real_error, range_error, attr_names)
 
-		rangeAUC = self.calAUCRange(range_error, points, poly, 0.2)
-		
+			rangeAUC = self.calAUCRange(range_error, points, poly, 0.2)
+			self.results, self.label = calLabel(rangeAUC, 0.2, self.db)
+
+			info = self.label[['Cluster', 'Atributo', 'min_faixa', 'max_faixa']].copy()
+			info['iter'] = [count] * self.label.shape[0]
+			labelsTable = labelsTable.append(info)
+
+			info1 = self.results[['Cluster', 'Accuracy']].copy()
+			info1['iter'] = [count] * self.results.shape[0]
+			acuraccyTable = acuraccyTable.append(info1)
+
+			count +=1
+
+		print(labelsTable)
+		print(acuraccyTable.sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False]))
 		'''plotLimitePoints(real_error, poly, rangeAUC, yy)
 		
 		plotPointsMean(real_error, yy)
@@ -71,7 +86,7 @@ class Rotulator:
 		plotPoints(real_error,yy)
 		plotPointsCurve(real_error, poly, inter_points, yy)
 		'''
-		self.result, self.label = calLabel(rangeAUC, 0.2, self.db)
+		
 
 		#render_mpl_table('accuracy_'+str(title), result, header_columns=0, col_width=2.0)
 		#render_mpl_table('label_'+str(title), label, header_columns=0, col_width=2.0)
