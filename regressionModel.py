@@ -6,11 +6,11 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 
 class trainingModels:
-	def __init__(self, Y, normalBD, attr_names, title):
-		_erros = pd.DataFrame(columns=['attr', 'mean_squared_error', 'r2'])
-		_metrics = pd.DataFrame(columns=['atr', 'metric','mean','sd'])
+	def __init__(self, normalBD, attr_names, title, folds):
+		_erros = pd.DataFrame(columns=['Atributo', 'mean_squared_error', 'r2'])
+		_metrics = pd.DataFrame(columns=['Atributo', 'metric','mean','sd'])
 
-		predictions, erros = self.training(normalBD, Y, attr_names)
+		self.predictions, erros = self.training(normalBD, attr_names, folds)
 		
 		#Cálculo das métricas de avaliação dos modelos de regressão
 		for e in erros:
@@ -31,12 +31,12 @@ class trainingModels:
 		_erros.to_csv('erroRegression_'+title+'.csv', index=False)
 		_metrics.to_csv('metricsRegression_'+title+'.csv', index=False)
 
-	def training(self, normalBD, Y, attr_names):
+	def training(self, normalBD, attr_names, folds):
 		# Cria DataFrames de treino e teste da bd normalizada 
 		# y: atributo de saída
-		kf = KFold(n_splits = 5, shuffle = True, random_state = 2)
+		kf = KFold(n_splits = folds, shuffle = True, random_state = 2)
 		model = SVR(kernel='linear', C=100, gamma='auto')
-		predict = pd.DataFrame(columns=['index', 'attr', 'predict'])
+		predict = pd.DataFrame(columns=['index', 'Atributo', 'predict'])
 		erro_metrics = []
 		for train, test in kf.split(normalBD):
 			for attr in attr_names:		
@@ -48,7 +48,7 @@ class trainingModels:
 
 				model.fit(x_train, attr_train)
 				attr_predicted = model.predict(x_test)
-	
+
 				for index, y in zip(test, attr_predicted):
 					predict.loc[predict.shape[0],:] = [index, attr, y]
 

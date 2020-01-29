@@ -15,65 +15,65 @@ from sklearn.model_selection import GridSearchCV
 from regressionModel import trainingModels
 from rotulate import calLabel
 
-datasets = [("./databases/modelo2.csv",4)]
-
-#("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
-
 class Rotulator:
-	def __init__(self, dataset):
+	def __init__(self, dataset, d, t, folds):
 		title = dataset.split('/')[2].split('.')[0]
 		
-		# Cria DataFrame com os valores de X,  o cluster Y e X normalizado
-		# retorna o array de nomes da bd
+		# DataFrames: 
+		# X: atributos, Y: cluster, normalBD: X normalizado
+		# attr_names : lista de nomes dos atributos
 		self.db, X, Y, normalBD, attr_names = self.importBD(dataset)
-		predictions = trainingModels(Y, normalBD, attr_names, title).predictions
-		acuraccyTable = pd.DataFrame(columns=['Cluster', 'Accuracy','iter'])
-		labelsTable = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'iter'])
 
-		count = 1
-
-		real_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'Erro'])
-		range_error = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue', 'RSME'])
-
-		yy = pd.DataFrame(columns= ['Actual', 'Predicted', 'Atributo','Cluster', 'Erro', 'Saida'])
-		for attr in attr_names:
-			
-			y = normalBD[attr]
-			x = normalBD.drop(attr, axis=1)
+		# Constrói os modelos de regressão e retorna um dataframe com as predições
+		# predisctions: {'index', 'Atributo', 'predict'}
+		predictions = trainingModels(normalBD, attr_names, title, folds).predictions
 		
-			y_Predicted = model.predict(x)
-			#plotRegression(x,y, model, attr)
-
-			# y_ : {y_real, y_Predicted, Cluster, Erro}
-			y_ = self.result(normalBD[attr], y, y_Predicted, Y)
-
-			yy = pd.concat([yy, y_[['Actual', 'Predicted', 'Cluster', 'Erro']].assign(Atributo=attr).assign(Saida = lambda x:X.loc[x.index, attr])], sort=True)
-			#plotPrediction(attr, y_)	
+		# Estrutura de dados para armazenar o erro das predições
+		yy = pd.DataFrame(columns= ['Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'])
+		for attr in attr_names:
+			#seleciona as predições para o atributo attr
+			y = predictions[(predictions['Atributo']==attr)].sort_values(by='index')
+			y.index = y['index'].values
+			y = y['predict']
 			
-			for clt, data in y_.groupby(['Cluster']):
-				for out, values in data.groupby([attr]):
-					real_error.loc[real_error.shape[0],:] = [clt, attr, X.loc[values.index[0],attr], out, values.mean(axis=0).Erro]
-				rsme = mean_squared_error(data['Predicted'], data['Actual'])
-				range_error.loc[range_error.shape[0],:] = [clt, attr, X.loc[data.index, attr].min(), X.loc[data.index, attr].max(), rsme ]		
-			#plotPredictionMean(attr, real_error)
-			
-			poly, points, inter_points = self.rangePatition(real_error, range_error, attr_names)
+			y_ = pd.DataFrame(columns=['Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'])
+			y_['Actual'] = X[attr]
+			y_['Normalizado'] = normalBD[attr].values
+			y_['Predicted'] = y.values
+			y_['Cluster'] = Y.values
+			y_ = y_.assign(Erro=lambda x: abs(x.Normalizado-x.Predicted))	
+			y_ = y_.assign(Atributo=attr)
 
-			rangeAUC = self.calAUCRange(range_error, points, poly, 0.2)
-			self.results, self.label = calLabel(rangeAUC, 0.2, self.db)
+			yy = pd.concat([yy, y_])
+		yy = yy.astype({'Actual': 'float64', 'Normalizado': 'float64', 'Predicted': 'float64', 'Erro':'float64'})
+		
+		# Estrutura de dados pra armazenar o erro médio em cada ponto único do atributo por grupo
+		errorByValue = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'])
+		# Estrutura de dados pra armazenar o início e fim dos atributos em cada grupo
+		attrRangeByGroup = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue'])
 
-			info = self.label[['Cluster', 'Atributo', 'min_faixa', 'max_faixa']].copy()
-			info['iter'] = [count] * self.label.shape[0]
-			labelsTable = labelsTable.append(info)
+		for atributo, info in yy.groupby(['Atributo']):
+			for clt, data in info.groupby(['Cluster']):
+				# Calcula o mínimo e máximo do atributo no grupo
+				attrRangeByGroup.loc[attrRangeByGroup.shape[0],:] = [clt, atributo, data['Actual'].min(), data['Actual'].max()]		
+				# Calcula o erro médio em cada ponto único do atributo por grupo
+				for out, values in data.groupby(['Actual']):
+					errorByValue.loc[errorByValue.shape[0],:] = [clt, atributo, out, values.mean(axis=0).Normalizado, values.mean(axis=0).Erro]
+		
+		# poly : funções polinomiais dos atributos por grupo
+		# points: pontos de limite dos intervalos 
+		# inter_points: pontos de interseção entre as funções	
+		poly, points, inter_points = self.rangePatition(errorByValue, attrRangeByGroup, attr_names)
 
-			info1 = self.results[['Cluster', 'Accuracy']].copy()
-			info1['iter'] = [count] * self.results.shape[0]
-			acuraccyTable = acuraccyTable.append(info1)
+		# calcula a relevância dos intervalos
+		# rangeAUC: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'}
+		rangeAUC = self.calAUCRange(attrRangeByGroup, points, poly, d)
+		
+		# monta os rótulos
+		# results: {'Cluster', 'Accuracy'}
+		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'}
+		self.results, self.label = calLabel(rangeAUC, t, self.db)
 
-			count +=1
-
-		print(labelsTable)
-		print(acuraccyTable.sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False]))
 		'''plotLimitePoints(real_error, poly, rangeAUC, yy)
 		
 		plotPointsMean(real_error, yy)
@@ -100,24 +100,14 @@ class Rotulator:
 
 		return dataset, X, Y, normalBD, attr_names
 
-	def result(self,attr, y_test, y_Predicted, cluster):
-		# y_ : {y_real, y_Predicted, Cluster, Erro}
-		y_ = pd.DataFrame({'Actual': y_test.to_numpy(), 'Predicted': y_Predicted, 'Cluster': cluster[y_test.index]})
-		y_ = y_.assign(Erro=lambda x: abs(x.Actual-x.Predicted))
-		y_.index = y_test.index
-		y_ = y_.join(attr[y_test.index])
-
-		return y_
-
-
-	def rangePatition(self, error, label, attr_names ):
+	def rangePatition(self, error, label, attr_names):
 		polynomials = self.polyApro(error)
 
 		# MinMax de cada atributo por grupo
-		minMax = [(values[['minValue']].min().to_numpy().tolist()+values[['maxValue']].max().to_numpy().tolist(), out) for out, values in label.groupby(['Atributo', 'Cluster'])]
+		minMax = [(list(data[['minValue']].min().values)+list(data[['maxValue']].max().values), out) for out, data in label.groupby(['Atributo', 'Cluster'])]
 		
 		# lista ordenada de valores no inicio  ou final de um polinomio por atributo
-		ranges = [(np.sort(np.unique(values[['minValue', 'maxValue']].to_numpy())).tolist(), out) for out, values in label.groupby(['Atributo'])]
+		ranges = [(list(np.sort(np.unique(data[['minValue', 'maxValue']].values))), out) for out, data in label.groupby(['Atributo'])]
 		
 		# pontos de interseção dos polinomios ([pontos], attr)
 		inter_points = []
@@ -136,10 +126,10 @@ class Rotulator:
 			all_points.append((np.unique(np.sort(i[0]+a)), i[1]))
 		
 		return polynomials, all_points, intersec
-	def polyApro(self,results):
+	def polyApro(self, results):
 		poli = []
 		for attr, data in results.groupby(['Atributo']):
-			poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'Erro'].to_numpy().astype(float), 2), cluster) for cluster, values in data.groupby(['Cluster']) if values.shape[0]>1], attr))
+			poli.append(([(np.polyfit(values.loc[values.index,'Saida'].to_numpy().astype(float), values.loc[:,'ErroMedio'].to_numpy().astype(float), 2), cluster) for cluster, values in data.groupby(['Cluster']) if values.shape[0]>1], attr))
 		return poli
 	def intersections(self,polynomials, minMax):
 		x =[]

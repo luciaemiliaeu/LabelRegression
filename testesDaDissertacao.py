@@ -1,19 +1,19 @@
 import numpy as np
 import pandas as pd
-import RotulatorModel
+import regressionTest3
 from sklearn import metrics
 import warnings
 warnings.filterwarnings("ignore")
 
-datasets = ['./databases/modelo2.csv']
+datasets = ['./databases/sementes.csv']
 #("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
 for dataset in datasets:
 	
-	r = RotulatorModel.Rotulator(dataset, 0.2, 0.2, 5)
+	r = regressionTest3.Rotulator(dataset)
 	label = r.label
 	data = r.db
 	print(label)
-	print(r.results)
+	print(r.result)
 	IS = metrics.silhouette_score(data.drop(['classe'], axis=1), data['classe'])
 	BD = metrics.davies_bouldin_score(data.drop(['classe'], axis=1), data['classe'])
 	print(IS, BD)
