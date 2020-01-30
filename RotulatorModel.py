@@ -9,17 +9,18 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
-from plotingFunctions import plotPointsMean, plotCurvesPointsMean, plotCurves, plotIntersec, plotPoints, plotResults, plotAUC, plotPoints, plotPointsCurve, plotRegression, plotPrediction, plotPredictionMean, plotLimitePoints,plotData, render_mpl_table
 from sklearn.model_selection import GridSearchCV
+#from plotingFunctions import plotPointsMean, plotCurvesPointsMean, plotCurves, plotIntersec, plotPoints, plotResults, plotAUC, plotPoints, plotPointsCurve, plotRegression, plotPrediction, plotPredictionMean, plotLimitePoints,plotData, render_mpl_table
 
+import plotingFunctions as pltFunc
+import saving_results as save
 from regressionModel import trainingModels
 from rotulate import calLabel
 
+
 class Rotulator:
-	def __init__(self, dataset, d, t, folds):
-		title = dataset.split('/')[2].split('.')[0]
-		
-		# DataFrames: 
+	def __init__(self, dataset, d, t, folds, title):		
+		# DataFrames
 		# X: atributos, Y: cluster, normalBD: X normalizado
 		# attr_names : lista de nomes dos atributos
 		self.db, X, Y, normalBD, attr_names = self.importBD(dataset)
@@ -27,7 +28,7 @@ class Rotulator:
 		# Constrói os modelos de regressão e retorna um dataframe com as predições
 		# predisctions: {'index', 'Atributo', 'predict'}
 		predictions = trainingModels(normalBD, attr_names, title, folds).predictions
-		
+
 		# Estrutura de dados para armazenar o erro das predições
 		yy = pd.DataFrame(columns= ['Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'])
 		for attr in attr_names:
@@ -46,6 +47,7 @@ class Rotulator:
 
 			yy = pd.concat([yy, y_])
 		yy = yy.astype({'Actual': 'float64', 'Normalizado': 'float64', 'Predicted': 'float64', 'Erro':'float64'})
+		save.save_table(title, yy, 'predictions.csv')
 		
 		# Estrutura de dados pra armazenar o erro médio em cada ponto único do atributo por grupo
 		errorByValue = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'])
@@ -59,7 +61,7 @@ class Rotulator:
 				# Calcula o erro médio em cada ponto único do atributo por grupo
 				for out, values in data.groupby(['Actual']):
 					errorByValue.loc[errorByValue.shape[0],:] = [clt, atributo, out, values.mean(axis=0).Normalizado, values.mean(axis=0).Erro]
-		
+
 		# poly : funções polinomiais dos atributos por grupo
 		polynomials = self.polyApro(errorByValue)
 
@@ -74,30 +76,24 @@ class Rotulator:
 		
 		# monta os rótulos
 		# results: {'Cluster', 'Accuracy'}
-		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'}
-		self.results, self.label = calLabel(rangeAUC, t, self.db)
-		
-		plotAUC(errorByValue, polynomials, rangeAUC)
+		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}
+		self.results, self.labels = calLabel(rangeAUC, t, self.db)
+		save.save_table(title, self.results, 'acuracia.csv')
+		save.save_table(title, self.labels, 'rotulos.csv')
 
-		#plotIntersec(errorByValue, polynomials, inter_points)
-		#plt.show()
-		'''plotLimitePoints(real_error, poly, rangeAUC, yy)
+		pltFunc.plot_Prediction(yy,title)
+		pltFunc.plot_Prediction_Mean_Erro(errorByValue, title)
+		pltFunc.plot_Func_and_Points(yy, polynomials, intersecByAttrInCluster, title)
+		pltFunc.plot_Mean_Points_Erro(errorByValue, title)
+		pltFunc.plot_Func_and_PointsMean(errorByValue, polynomials, title)
+		pltFunc.plot_Functions(errorByValue, polynomials, title)
+		pltFunc.plot_Intersec(errorByValue, polynomials, intersecByAttrInCluster, title)
+		pltFunc.plot_AUC(errorByValue, polynomials, rangeAUC, title)
+		pltFunc.plot_Limite_Points(errorByValue, polynomials, limitPoints, title)
 		
-		plotPointsMean(real_error, yy)
-		plotCurvesPointsMean(real_error, poly, yy)
-		plotCurves(real_error, poly)
-		plotIntersec(real_error, poly, inter_points)
+		pltFunc.render_results_table(self.results, title, header_columns=0, col_width=2.0)
+		pltFunc.render_labels_table( self.labels, title, header_columns=0, col_width=2.0)
 
-		plotResults(title, real_error, poly, inter_points, yy)
-		plotAUC(real_error, poly, rangeAUC)
-		plotPoints(real_error,yy)
-		plotPointsCurve(real_error, poly, inter_points, yy)
-		'''
-		
-
-		#render_mpl_table('accuracy_'+str(title), result, header_columns=0, col_width=2.0)
-		#render_mpl_table('label_'+str(title), label, header_columns=0, col_width=2.0)
-	
 	def importBD(self, path):
 		#trocar nome da classe para Grupo
 		dataset = pd.read_csv(path, sep=',',parse_dates=True)

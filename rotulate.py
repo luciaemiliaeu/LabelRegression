@@ -3,12 +3,12 @@ import pandas as pd
 	
 def calLabel(rangeAUC, V, db):
 	# Calcula acurácia dos intervalos
-	# accuratedRange: {Cluster, Atributo, min_faixa, max_faixa, AUC, Accuracy}
+	# accuratedRange: {Cluster, Atributo, min_faixa, max_faixa, Accuracy}
 	accuratedRange = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
 	accuratedRange.drop(['AUC'], axis=1, inplace= True)
 
-	rotulos = pd.DataFrame(columns = accuratedRange.columns)
-	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
+	labels = pd.DataFrame(columns = accuratedRange.columns)
+	results = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
 	
 	for i in db['classe'].unique():
 		# Seleciona todos os pares atributo intervalo candidatos ao rótulo do grupo
@@ -16,7 +16,7 @@ def calLabel(rangeAUC, V, db):
 		idx = rotulo_.index.values.tolist()
 		
 		# Verifica os pares que já estão no rótulo do grupo
-		rc = rotulos[(rotulos['Cluster']==i)]
+		rc = labels[(labels['Cluster']==i)]
 
 		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
 		repit = True 
@@ -33,9 +33,9 @@ def calLabel(rangeAUC, V, db):
 			if all([x<=V for x in other_c]) or not idx: 
 				repit = False
 		
-		rotulos = pd.concat([rotulos, rc], sort=False)
-		result.loc[result.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
-	return result, rotulos
+		labels = pd.concat([labels, rc], sort=False)
+		results.loc[results.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
+	return results, labels
 
 def calAccuracyRange(info, data, classe):
 	data_ = data[(data['classe'] == classe)][info['Atributo']].values

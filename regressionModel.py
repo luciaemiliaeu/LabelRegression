@@ -4,12 +4,14 @@ import statistics
 from sklearn.svm import SVR
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
+import os
 
 class trainingModels:
 	def __init__(self, normalBD, attr_names, title, folds):
 		_erros = pd.DataFrame(columns=['Atributo', 'mean_squared_error', 'r2'])
 		_metrics = pd.DataFrame(columns=['Atributo', 'metric','mean','sd'])
 
+		# predisctions: {'index', 'Atributo', 'predict'}
 		self.predictions, erros = self.training(normalBD, attr_names, folds)
 		
 		#Cálculo das métricas de avaliação dos modelos de regressão
@@ -28,8 +30,18 @@ class trainingModels:
 		for me, sd in zip(mean_r2, sd_r2):
 			_metrics.loc[_metrics.shape[0],:] = [me[0], 'r2', me[1], sd[1]]
 
-		_erros.to_csv('erroRegression_'+title+'.csv', index=False)
-		_metrics.to_csv('metricsRegression_'+title+'.csv', index=False)
+		self.save_result(title, _erros, 'erroRegression.csv')
+		self.save_result(title, _metrics, 'metricsRegression.csv')
+
+	def save_result(self, dataset_name, table, file_name):
+		script_dir = os.path.dirname(__file__)
+		results_dir = os.path.join(script_dir, 'Testes/'+dataset_name+'/')
+		sample_file_name = file_name
+
+		if not os.path.isdir(results_dir):
+		    os.makedirs(results_dir)
+		table.to_csv(results_dir + file_name, index=False)
+		
 
 	def training(self, normalBD, attr_names, folds):
 		# Cria DataFrames de treino e teste da bd normalizada 
