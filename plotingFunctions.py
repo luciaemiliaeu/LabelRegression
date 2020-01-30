@@ -200,7 +200,7 @@ def plotIntersec(results, polis, intersec):
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting curvas
 			attr_column = values.loc[values.index,'Saida'].values
-			erro = values.loc[:,'Erro'].values
+			erro = values.loc[:,'ErroMedio'].values
 			
 			poli = [p[0] for p in polis if p[1]==attr]
 			pol = [p[0] for p in poli[0] if p[1]==cluster]
@@ -229,7 +229,7 @@ def plotAUC(results, polis, labels):
 			l = labels[(labels['Atributo']== attr) & (labels['Cluster']== cluster)]
 			# Ploting curvas
 			attr_column = values.loc[values.index,'Saida'].values
-			erro = values.loc[:,'Erro'].values
+			erro = values.loc[:,'ErroMedio'].values
 			
 			poli = [p[0] for p in polis if p[1]==attr]
 			pol = [p[0] for p in poli[0] if p[1]==cluster]

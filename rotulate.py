@@ -1,41 +1,49 @@
 import numpy as np 
 import pandas as pd
+	
+def calLabel(rangeAUC, V, db):
+	# Calcula acurácia dos intervalos
+	# accuratedRange: {Cluster, Atributo, min_faixa, max_faixa, AUC, Accuracy}
+	accuratedRange = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
+	accuratedRange.drop(['AUC'], axis=1, inplace= True)
+
+	rotulos = pd.DataFrame(columns = accuratedRange.columns)
+	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
+	
+	for i in db['classe'].unique():
+		# Seleciona todos os pares atributo intervalo candidatos ao rótulo do grupo
+		rotulo_ = accuratedRange[(accuratedRange['Cluster']==i)]
+		idx = rotulo_.index.values.tolist()
+		
+		# Verifica os pares que já estão no rótulo do grupo
+		rc = rotulos[(rotulos['Cluster']==i)]
+
+		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
+		repit = True 
+		while repit:
+			# adiciona o próximo par ao rótulo 			
+			rc = pd.concat([rc, rotulo_[(rotulo_.index==idx.pop(0))]], sort=False)
+			
+			# calcula o acerto em todos os grupos
+			acc = acertoRotulo(rc, db)
+			c_ = [x[1] for x in acc if x[0]==i]
+			other_c = [x[1] for x in acc if x[0]!=i]
+
+			# verifica a restrição
+			if all([x<=V for x in other_c]) or not idx: 
+				repit = False
+		
+		rotulos = pd.concat([rotulos, rc], sort=False)
+		result.loc[result.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
+	return result, rotulos
 
 def calAccuracyRange(info, data, classe):
 	data_ = data[(data['classe'] == classe)][info['Atributo']].values
 	acertos = [x for x in data_ if x>=info['min_faixa'] and x<=info['max_faixa']]
 	return len(acertos) / len(data_)
-	
-def calLabel(rangeAUC, V, db):
-	labels = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
-	rotulo = pd.DataFrame(columns = labels.columns)
-	result = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
-	for i in db['classe'].unique():
-		#print('\n\nCluster '+str(i))
-		attrs_cluster = labels[(labels['Cluster']==i)]
-		idx = attrs_cluster.index.values.tolist()
-		rc = rotulo[(rotulo['Cluster']==i)]
-		
-		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
-		repit = True 
-		while repit:			
-			rc = pd.concat([rc, attrs_cluster[(attrs_cluster.index==idx.pop(0))]], sort=False)
-			acc = acertoRotulo(rc, db)
-			#print(acc)
-			c_ = [x[1] for x in acc if x[0]==i]
-			other_c = [x[1] for x in acc if x[0]!=i]
-
-			if all([x<=V for x in other_c]) or not idx: 
-				repit = False
-		result.loc[result.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
-		rotulo = pd.concat([rotulo, rc], sort=False)
-	return result, rotulo
 
 def acertoRotulo(rotulo, data):
 	acerto = []
-	#print('---------------------------')
-	#print('Rotulo')
-	#print(rotulo)
 	for clt in data['classe'].unique():
 		data_ = data[(data['classe'] == clt)]
 		total = data_.shape[0]

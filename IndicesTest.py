@@ -3,16 +3,23 @@ import pandas as pd
 import RotulatorModel
 from sklearn import metrics
 import warnings
+import matplotlib.pyplot as plt
+
 warnings.filterwarnings("ignore")
 
-datasets = ['./databases/modelo2.csv']
-#("./databases/mnist64.csv",10),("./databases/iris.csv",3),("./databases/vidros.csv",6), ("./databases/sementes.csv",3)]
+datasets = ['./databases/parkinson.csv']
+#"./databases/mnist64.csv","./databases/iris.csv","./databases/vidros.csv", "./databases/sementes.csv"]
 for dataset in datasets:
-	
-	r = RotulatorModel.Rotulator(dataset, 0.2, 0.2, 5)
-	label = r.label
-	data = r.db
-	print(label)
+	#dataset, d, t, folds
+	for i in range(10):
+		r = RotulatorModel.Rotulator(dataset, (i+1)*0.1, 0.15, 10)
+		print(r.label)
+		print(r.results)
+	plt.show()
+
+
+'''
+print(label)
 	print(r.results)
 	IS = metrics.silhouette_score(data.drop(['classe'], axis=1), data['classe'])
 	BD = metrics.davies_bouldin_score(data.drop(['classe'], axis=1), data['classe'])
@@ -26,3 +33,5 @@ for dataset in datasets:
 	IS = metrics.silhouette_score(data.drop(['classe'], axis=1), data['classe'])
 	BD = metrics.davies_bouldin_score(data.drop(['classe'], axis=1), data['classe'])
 	print(IS, BD)
+
+'''
