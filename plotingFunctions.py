@@ -30,6 +30,7 @@ def render_outcomes_table(out, dataset_name, col_width=3.0, row_height=0.625, fo
 		else:
 			cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
 	save.save_fig(dataset_name,'outcomes_'+dataset_name)
+	plt.close('all')
 
 def render_results_table(results, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
@@ -54,6 +55,7 @@ def render_results_table(results, dataset_name, col_width=3.0, row_height=0.625,
 		else:
 			cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
 	save.save_fig(dataset_name,'labels_accuracy_'+dataset_name)
+	plt.close('all')
 
 def render_labels_table(labels, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
@@ -79,8 +81,10 @@ def render_labels_table(labels, dataset_name, col_width=3.0, row_height=0.625, f
 		else:
 			cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
 	save.save_fig(dataset_name,'labels_'+dataset_name)
+	plt.close('all')
 
 def plot_Regression(X, y, svr, attr):
+	plt.close('all')
 	plt.figure(figsize = [20,10], dpi = 200)
 	predicted = svr.predict(X)	
 
@@ -98,6 +102,7 @@ def plot_Regression(X, y, svr, attr):
 	plt.legend()
 	plt.title(attr)
 	plt.savefig('regression_'+attr)
+	plt.close('all')
 
 # Gráfico de barras com o valor real, as predições e o erro
 def plot_Prediction(predictions, dataset_name):
@@ -118,6 +123,7 @@ def plot_Prediction(predictions, dataset_name):
 			ax += 1
 
 		save.save_fig(dataset_name,'prediction_erro_'+attr)
+		plt.close('all')
 
 #Gráfico de barras com o erro médio de predição por ponto
 def plot_Prediction_Mean_Erro(results, dataset_name):
@@ -136,6 +142,7 @@ def plot_Prediction_Mean_Erro(results, dataset_name):
 			axes[ax].set_title('Grupo '+str(i),fontweight ='medium',  loc='left')
 			ax += 1
 		save.save_fig(dataset_name,'mean_prediction_erro_'+attr)
+		plt.close('all')
 
 # Gráfico de linhas com as funções e pontos de erro por grupo
 def plot_Func_and_Points(results, polis, intersec, dataset_name):
@@ -171,6 +178,7 @@ def plot_Func_and_Points(results, polis, intersec, dataset_name):
 			plt.legend()
 		
 		save.save_fig(dataset_name,'functions_and_points_'+attr)
+		plt.close('all')
 
 # Gráfico de pontos dos erros médio por grupo
 def plot_Mean_Points_Erro(results, dataset_name):
@@ -184,6 +192,7 @@ def plot_Mean_Points_Erro(results, dataset_name):
 			plt.plot(values['Saida'], values['ErroMedio'], 'o', markersize=7, label='Erros no Grupo '+str(cluster))			
 			plt.legend()
 		save.save_fig(dataset_name,'mean_Erro_Points_'+attr)
+		plt.close('all')
 
 # Gráfico de linha com a função do erro e pontos de erro médio por grupo
 def plot_Func_and_PointsMean(results, polis, dataset_name):
@@ -216,6 +225,7 @@ def plot_Func_and_PointsMean(results, polis, dataset_name):
 				plt.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster), c= color)
 			plt.legend()
 		save.save_fig(dataset_name,'func_pointsMean_'+attr)
+		plt.close('all')
 
 #Gáfico de linha das funções de erro por grupo
 def plot_Functions(results, polis, dataset_name):
@@ -247,6 +257,7 @@ def plot_Functions(results, polis, dataset_name):
 		q = [ np.round(elem,2) for elem in p ]
 		plt.xticks(list(set(q)))
 		save.save_fig(dataset_name,'functions_'+attr)
+		plt.close('all')
 
 # Gráfico de linhas das funções de erro e as inteseções destacadas
 def plot_Intersec(results, polis, intersec, dataset_name):
@@ -281,6 +292,7 @@ def plot_Intersec(results, polis, intersec, dataset_name):
 		plt.xticks(list(set(q)))
 		
 		save.save_fig(dataset_name,'intersec_'+attr )
+		plt.close('all')
 
 # Gráfico de linhas das funções de erro e a AUC destacada
 def plot_AUC(results, polis, labels, dataset_name):
@@ -322,6 +334,7 @@ def plot_AUC(results, polis, labels, dataset_name):
 		ax.set_xticks(list(set(minimos+maximos)))
 		ax.set_xticklabels(list(set(minimos+maximos)))
 		save.save_fig(dataset_name,'AUC_'+attr )
+		plt.close('all')
 		
 # Gráfio de linha das funções de erro e faixas limitadas
 def plot_Limite_Points(results, polis, intersec, dataset_name):
@@ -360,3 +373,4 @@ def plot_Limite_Points(results, polis, intersec, dataset_name):
 		ax.set_xticklabels(p)
 		
 		save.save_fig(dataset_name,'limites_'+attr )
+		plt.close('all')

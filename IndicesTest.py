@@ -5,7 +5,7 @@ from sklearn import metrics
 import warnings
 import matplotlib.pyplot as plt
 import saving_results as save
-
+import gc
 warnings.filterwarnings("ignore")
 
 datasets = ["./databases/wine.csv"]
@@ -24,6 +24,9 @@ for dataset in datasets:
 			n = data['Atributo'].unique().shape[0]
 			n_elemForLabel.append(n)
 
+		del r
+		gc.collect()
+		
 		out.loc[out.shape[0],:]=[np.round((i+1)*0.1,2), list(accuracys), n_elemForLabel]
 	
 	out = out.round(2)

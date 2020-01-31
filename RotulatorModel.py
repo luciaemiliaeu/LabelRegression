@@ -25,7 +25,7 @@ class Rotulator:
 
 		# Estrutura de dados para armazenar o erro das predições
 		yy = pd.DataFrame(columns= ['Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'])
-		yy = yy.astype({'Actual': 'float64', 'Normalizado': 'float64', 'Predicted': 'float64', 'Erro':'float64'})
+		
 		for attr in attr_names:
 			#seleciona as predições para o atributo attr
 			y = predictions[(predictions['Atributo']==attr)].sort_values(by='index')
@@ -50,6 +50,7 @@ class Rotulator:
 		attrRangeByGroup = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue'])
 		attrRangeByGroup = attrRangeByGroup.astype({'minValue': 'float64', 'maxValue': 'float64'})
 		
+		yy = yy.astype({'Actual': 'float64', 'Normalizado': 'float64', 'Predicted': 'float64', 'Erro':'float64'})
 		for atributo, info in yy.groupby(['Atributo']):
 			for clt, data in info.groupby(['Cluster']):
 				# Calcula o mínimo e máximo do atributo no grupo
@@ -219,9 +220,3 @@ class Rotulator:
 		auc, err = integrate.quad(np.poly1d(func[0]),a, b)
 		return auc
 
-
-	
-
-	
-
-	
