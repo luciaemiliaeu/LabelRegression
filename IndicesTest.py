@@ -8,15 +8,15 @@ import saving_results as save
 
 warnings.filterwarnings("ignore")
 
-datasets = ['./databases/iris.csv',"./databases/sementes.csv","./databases/breast_cancer.csv","./databases/vidros.csv"]
-#"./databases/mnist64.csv","./databases/iris.csv","./databases/vidros.csv", "./databases/sementes.csv"]
+datasets = ["./databases/wine.csv"]
+#"./databases/breast_cancer.csv","./databases/iris.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 for dataset in datasets:
 	title = dataset.split('/')[2].split('.')[0]
 	out = pd.DataFrame(columns =['d', 'accuracys', 'n_elemForLabel'])
 	for i in range(10):
 		print(title +' '+ str(i))
 		#parâmetros do rotulados: (dataset, d, t, folds, dataset_name)
-		r = RotulatorModel.Rotulator(dataset, (i+1)*0.1, 0.15, 10, title+str(i))
+		r = RotulatorModel.Rotulator(dataset, (i+1)*0.1, 0.2, 10, title+str(i))
 		
 		accuracys = r.results['Accuracy'].values
 		n_elemForLabel = []
@@ -26,7 +26,9 @@ for dataset in datasets:
 
 		out.loc[out.shape[0],:]=[np.round((i+1)*0.1,2), list(accuracys), n_elemForLabel]
 	
+	out = out.round(2)
 	out.to_csv('./Testes/results_'+title+'.csv', index=False)
+
 
 '''
 print(label)

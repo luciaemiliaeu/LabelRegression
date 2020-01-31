@@ -1,4 +1,5 @@
-import pandas as pd 
+import pandas as pd
+import numpy as np 
 import matplotlib.pyplot as plt 
 import os
 
@@ -9,6 +10,8 @@ def save_table(dataset_name, table, file_name):
 
 	if not os.path.isdir(results_dir):
 	    os.makedirs(results_dir)
+	tmp = table.select_dtypes(include=[np.number])
+	table.loc[:, tmp.columns] = np.round(tmp, 2)
 	table.to_csv(results_dir + file_name, index=False)
 
 def save_fig(dataset_name, figName):

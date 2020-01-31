@@ -1,16 +1,9 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import statistics
 import scipy.integrate as integrate
 from itertools import combinations
 from scipy.optimize import fsolve
-
 from sklearn.preprocessing import minmax_scale
-from sklearn.metrics import mean_squared_error
-from sklearn.svm import SVR
-from sklearn.model_selection import GridSearchCV
-#from plotingFunctions import plotPointsMean, plotCurvesPointsMean, plotCurves, plotIntersec, plotPoints, plotResults, plotAUC, plotPoints, plotPointsCurve, plotRegression, plotPrediction, plotPredictionMean, plotLimitePoints,plotData, render_mpl_table
 
 import plotingFunctions as pltFunc
 import saving_results as save
@@ -27,10 +20,12 @@ class Rotulator:
 
 		# Constrói os modelos de regressão e retorna um dataframe com as predições
 		# predisctions: {'index', 'Atributo', 'predict'}
-		predictions = trainingModels(normalBD, attr_names, title, folds).predictions
+		models = trainingModels(normalBD, attr_names, title, folds)
+		predictions = models.predictions
 
 		# Estrutura de dados para armazenar o erro das predições
 		yy = pd.DataFrame(columns= ['Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'])
+		yy = yy.astype({'Actual': 'float64', 'Normalizado': 'float64', 'Predicted': 'float64', 'Erro':'float64'})
 		for attr in attr_names:
 			#seleciona as predições para o atributo attr
 			y = predictions[(predictions['Atributo']==attr)].sort_values(by='index')
@@ -46,14 +41,15 @@ class Rotulator:
 			y_ = y_.assign(Atributo=attr)
 
 			yy = pd.concat([yy, y_])
-		yy = yy.astype({'Actual': 'float64', 'Normalizado': 'float64', 'Predicted': 'float64', 'Erro':'float64'})
-		save.save_table(title, yy, 'predictions.csv')
+		
 		
 		# Estrutura de dados pra armazenar o erro médio em cada ponto único do atributo por grupo
 		errorByValue = pd.DataFrame(columns=['Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'])
+		errorByValue = errorByValue.astype({'Saida': 'float64', 'nor_Saida': 'float64', 'ErroMedio': 'float64'})
 		# Estrutura de dados pra armazenar o início e fim dos atributos em cada grupo
 		attrRangeByGroup = pd.DataFrame(columns=['Cluster', 'Atributo', 'minValue', 'maxValue'])
-
+		attrRangeByGroup = attrRangeByGroup.astype({'minValue': 'float64', 'maxValue': 'float64'})
+		
 		for atributo, info in yy.groupby(['Atributo']):
 			for clt, data in info.groupby(['Cluster']):
 				# Calcula o mínimo e máximo do atributo no grupo
@@ -77,10 +73,16 @@ class Rotulator:
 		# monta os rótulos
 		# results: {'Cluster', 'Accuracy'}
 		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}
-		self.results, self.labels = calLabel(rangeAUC, t, self.db)
+		self.results, self.labels, rotulation_process = calLabel(rangeAUC, t, self.db)
+	
+		save.save_table(title, models._erros, 'erroRegression.csv')
+		save.save_table(title, models._metrics, 'metricsRegression.csv')
+		save.save_table(title, yy, 'predictions.csv')
+		save.save_table(title, rangeAUC, 'range.csv')
 		save.save_table(title, self.results, 'acuracia.csv')
 		save.save_table(title, self.labels, 'rotulos.csv')
-
+		save.save_table(title, rotulation_process, 'rotulos_por_iteracao.csv')
+	
 		pltFunc.plot_Prediction(yy,title)
 		pltFunc.plot_Prediction_Mean_Erro(errorByValue, title)
 		pltFunc.plot_Func_and_Points(yy, polynomials, intersecByAttrInCluster, title)
@@ -93,14 +95,15 @@ class Rotulator:
 		
 		pltFunc.render_results_table(self.results, title, header_columns=0, col_width=2.0)
 		pltFunc.render_labels_table( self.labels, title, header_columns=0, col_width=2.0)
-
+		
 	def importBD(self, path):
 		#trocar nome da classe para Grupo
 		dataset = pd.read_csv(path, sep=',',parse_dates=True)
 		Y = dataset.loc[:,'classe']
 		X = dataset.drop('classe', axis=1)
 		attr_names = X.columns
-		normalBD = pd.DataFrame(X.apply(minmax_scale).to_numpy(), columns = attr_names)
+		normalBD = pd.DataFrame(X.apply(minmax_scale).values, columns = attr_names)
+		normalBD = normalBD.astype('float64')
 
 		return dataset, X, Y, normalBD, attr_names
 	
@@ -156,7 +159,7 @@ class Rotulator:
 					for x0 in xx:
 						r = fsolve(lambda x : np.polyval(poly1[0], x) - np.polyval(poly2[0], x),x0, full_output=True, factor = 10) 
 						if (r[3] == 'The solution converged.' and r[0][0] >= x_minimum and r[0][0]<= x_maximum):
-							intersections.append((round(r[0][0],3), poly[1], c))			
+							intersections.append((round(r[0][0],2), poly[1], c))			
 		
 		intersecByAttrInCluster = []
 		for attr, clt in [i[1] for i in minMax]:
@@ -174,6 +177,8 @@ class Rotulator:
 	def calAUCRange(self,label, limites, poli, lim):	
 		
 		finalrange = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
+		finalrange = finalrange.astype({'min_faixa': 'float64', 'max_faixa': 'float64' ,'AUC': 'float64'})
+
 		for attr, data in label.groupby(['Atributo']):
 			# seleciona o conjunto de limite do atributo e os polinônios de cada grupo
 
@@ -189,6 +194,8 @@ class Rotulator:
 
 				# calcula o erro estimado para a função de cada grupo selecionado
 				erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
+				erroFaixa = erroFaixa.astype({'min_faixa': 'float64', 'max_faixa': 'float64' ,'AUC': 'float64'})
+
 				for k in clusters:
 					erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, self.AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
 				
@@ -206,7 +213,7 @@ class Rotulator:
 						finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'AUC'] += auc[0]	
 						finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'max_faixa'] = max_[0]
 					else:
-						finalrange.loc[finalrange.shape[0],:] = clusterFinal[(clusterFinal['Cluster']==i)].values
+						finalrange.loc[finalrange.shape[0],:] = clusterFinal[(clusterFinal['Cluster']==i)].values[0]
 		return finalrange
 	def AUC(self,a, b, func):
 		auc, err = integrate.quad(np.poly1d(func[0]),a, b)
