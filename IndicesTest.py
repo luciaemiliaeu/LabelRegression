@@ -8,7 +8,7 @@ import saving_results as save
 import gc
 warnings.filterwarnings("ignore")
 
-datasets = ["./databases/wine.csv"]
+datasets = ["./databases/iris.csv"]
 #"./databases/breast_cancer.csv","./databases/iris.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 for dataset in datasets:
 	title = dataset.split('/')[2].split('.')[0]
@@ -29,8 +29,8 @@ for dataset in datasets:
 		gc.collect()
 		
 		out.loc[out.shape[0],['d']]=[d]
-		out.loc[out.shape[0],['n_elemForLabel']]=[n_elemForLabel]
-		out.loc[out.shape[0],['accuracys']]=[accuracys]
+		out.loc[out.shape[0]-1,['n_elemForLabel']]=[n_elemForLabel]
+		out.loc[out.shape[0]-1,['accuracys']]=[accuracys]
 	
 	out = out.round(2)
 	out.to_csv('./Testes/results_'+title+'.csv', index=False)

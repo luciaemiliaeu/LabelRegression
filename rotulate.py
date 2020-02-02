@@ -18,29 +18,44 @@ def calLabel(rangeAUC, V, db):
 	for i in db['classe'].unique():
 		# Seleciona todos os pares atributo intervalo candidatos ao rótulo do grupo
 		rotulo_ = accuratedRange[(accuratedRange['Cluster']==i)]
+		rc = pd.DataFrame(columns=rotulo_.columns)
 		idx = rotulo_.index.values.tolist()
-		
-		# Verifica os pares que já estão no rótulo do grupo
-		rc = labels[(labels['Cluster']==i)]
 		iteracao = 0
 		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
 		repit = True 
 		while repit:
-			# adiciona o próximo par ao rótulo 			
-			rc = pd.concat([rc, rotulo_[(rotulo_.index==idx.pop(0))]], sort=False)
+			# seleciona os elementos de maior acurácia
+			acc_max = rotulo_.max()['Accuracy']
+			pro_attr = rotulo_[(rotulo_['Accuracy'] == acc_max)]
+			rotulo_.drop(pro_attr.index, axis=0, inplace=True)
 			
-			# calcula o acerto em todos os grupos
-			acc = acertoRotulo(rc, db)
-			c_ = [x[1] for x in acc if x[0]==i]
-			other_c = [x[1] for x in acc if x[0]!=i]
-			rotulation_process.loc[rotulation_process.shape[0],['Cluster', 'iteracao']] = [i,iteracao]
-			rotulation_process.loc[rotulation_process.shape[0],['acuracias']] = [acc]
+			while not pro_attr.empty:
+				# calcula o acerto em todos os grupos para os elementos de maior acuracia
+				max_other_cluster_acc = []
+				for index, row in pro_attr.iterrows():
+					acc = acertoRotulo(rc.append(row), db)
+					c_ = [x[1] for x in acc if x[0]==i]
+					other_c = [x[1] for x in acc if x[0]!=i]
+					max_other_cluster_acc.append((index, max(other_c), acc, c_, other_c))
+				
+				# ordena os elementos pela representação mínima nos outros grupos
+				max_other_cluster_acc.sort(key=lambda x: x[1])
+				
+				# adiciona o próximo par ao rótulo 	
+				par = max_other_cluster_acc.pop(0)
+				rc = rc.append(pro_attr[(pro_attr.index==par[0])])
+				pro_attr.drop(par[0], axis=0, inplace=True)
+				rotulation_process.loc[rotulation_process.shape[0],['Cluster', 'iteracao']] = [i,iteracao]
+				rotulation_process.loc[rotulation_process.shape[0]-1,['acuracias']] = [par[2]]
 
-			iteracao += 1
+				print(rotulation_process)
+				input()
+				iteracao += 1
 
-			# verifica a restrição
-			if all([x<=V for x in other_c]) or not idx: 
-				repit = False
+				# verifica a restrição
+				if par[1]<V or rotulo_.empty:
+					repit = False
+					break
 		
 		labels = pd.concat([labels, rc], sort=False)
 		results.loc[results.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]

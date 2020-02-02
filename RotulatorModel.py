@@ -76,6 +76,9 @@ class Rotulator:
 		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}
 		self.results, self.labels, rotulation_process = calLabel(rangeAUC, t, self.db)
 		print("rotulation done")
+		save.save_table(title, self.results, 'acuracia.csv')
+		save.save_table(title, self.labels, 'rotulos.csv')
+		save.save_table(title, rotulation_process, 'rotulos_por_iteracao.csv')
 		'''
 		save.save_table(title, models._erros, 'erroRegression.csv')
 		save.save_table(title, models._metrics, 'metricsRegression.csv')
