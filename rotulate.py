@@ -33,7 +33,9 @@ def calLabel(rangeAUC, V, db):
 			acc = acertoRotulo(rc, db)
 			c_ = [x[1] for x in acc if x[0]==i]
 			other_c = [x[1] for x in acc if x[0]!=i]
-			rotulation_process.loc[rotulation_process.shape[0],:] = [i,iteracao, acc]
+			rotulation_process.loc[rotulation_process.shape[0],['Cluster', 'iteracao']] = [i,iteracao]
+			rotulation_process.loc[rotulation_process.shape[0],['acuracias']] = [acc]
+
 			iteracao += 1
 
 			# verifica a restrição
