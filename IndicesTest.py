@@ -8,7 +8,7 @@ import saving_results as save
 import gc
 warnings.filterwarnings("ignore")
 
-datasets = ["./databases/iris.csv"]
+datasets = ["./databases/breast_cancer.csv","./databases/iris.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 #"./databases/breast_cancer.csv","./databases/iris.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 for dataset in datasets:
 	title = dataset.split('/')[2].split('.')[0]

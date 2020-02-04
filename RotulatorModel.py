@@ -76,10 +76,7 @@ class Rotulator:
 		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}
 		self.results, self.labels, rotulation_process = calLabel(rangeAUC, t, self.db)
 		print("rotulation done")
-		save.save_table(title, self.results, 'acuracia.csv')
-		save.save_table(title, self.labels, 'rotulos.csv')
-		save.save_table(title, rotulation_process, 'rotulos_por_iteracao.csv')
-		'''
+		
 		save.save_table(title, models._erros, 'erroRegression.csv')
 		save.save_table(title, models._metrics, 'metricsRegression.csv')
 		save.save_table(title, yy, 'predictions.csv')
@@ -100,7 +97,7 @@ class Rotulator:
 		
 		pltFunc.render_results_table(self.results, title, header_columns=0, col_width=2.0)
 		pltFunc.render_labels_table( self.labels, title, header_columns=0, col_width=2.0)
-		'''
+		
 	def importBD(self, path):
 		#trocar nome da classe para Grupo
 		dataset = pd.read_csv(path, sep=',',parse_dates=True)

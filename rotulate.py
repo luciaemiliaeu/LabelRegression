@@ -48,12 +48,10 @@ def calLabel(rangeAUC, V, db):
 				rotulation_process.loc[rotulation_process.shape[0],['Cluster', 'iteracao']] = [i,iteracao]
 				rotulation_process.loc[rotulation_process.shape[0]-1,['acuracias']] = [par[2]]
 
-				print(rotulation_process)
-				input()
 				iteracao += 1
 
 				# verifica a restrição
-				if par[1]<V or rotulo_.empty:
+				if par[1]<=V or rotulo_.empty:
 					repit = False
 					break
 		
