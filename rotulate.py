@@ -7,6 +7,7 @@ def calLabel(rangeAUC, V, db):
 	accuratedRange = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
 	accuratedRange.drop(['AUC'], axis=1, inplace= True)
 
+
 	labels = pd.DataFrame(columns = accuratedRange.columns)
 	labels = labels.astype({'min_faixa': 'float64', 'min_faixa': 'float64', 'Accuracy': 'float64'})
 	
@@ -58,7 +59,7 @@ def calLabel(rangeAUC, V, db):
 		labels = pd.concat([labels, rc], sort=False)
 		results.loc[results.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
 
-	return results, labels, rotulation_process
+	return accuratedRange, results, labels, rotulation_process
 
 def calAccuracyRange(info, data, classe):
 	data_ = data[(data['classe'] == classe)][info['Atributo']].values

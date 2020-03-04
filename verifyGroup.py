@@ -29,15 +29,17 @@ def nao_obedecem_aos_seus_rotulos(data, rotulos):
 		clusters.append((clt, not_x.index))
 	return clusters
 
-databases = ['./databases/iris3.csv']
-labels = ['./Testes/iris0/rotulos.csv']
-
+databases = ['./databases/sementes.csv']
+d = 0.1
+t = 0.15
 for database in databases:
 	data = pd.read_csv(database)
-	rotulo = RotulatorModel.Rotulator(database, 0.1, 0.7, 10, database.split('/')[2].split('.')[0])
+	rotulo = RotulatorModel.Rotulator(database, d, t , 10, database.split('/')[2].split('.')[0])
 	acc = rotulo.results.mean()['Accuracy']
 	#print('Rótulo inicial: ', rotulo.labels)
 	print('Acurácia inicial: ', np.round(acc,2))
+	print(rotulo.results)
+	print(rotulo.labels)
 	IS = metrics.silhouette_score(data.drop(['classe'], axis=1), data['classe'])
 	BD = metrics.davies_bouldin_score(data.drop(['classe'], axis=1), data['classe'])
 	print('Indices :', IS, BD)
@@ -48,7 +50,7 @@ for database in databases:
 		grupos_segundo_rotulo = obedecem_ao_rotulo(data, rotulo.labels)
 		estao_no_grupo_errado = nao_obedecem_aos_seus_rotulos(data, rotulo.labels)
 
-		print('grupo errado: ', estao_no_grupo_errado)
+		#print('grupo errado: ', estao_no_grupo_errado)
 		print(grupos_segundo_rotulo)
 		changed = False
 		for clt, elemento_errado in estao_no_grupo_errado:
@@ -68,12 +70,14 @@ for database in databases:
 		
 		print('novos indices :', IS, BD)
 
-		data.to_csv('database'+str(iteracao)+'.csv', index = False)
-		rotulo = RotulatorModel.Rotulator('database'+str(iteracao)+'.csv', 0.1, 0.1, 10, database.split('/')[2].split('.')[0])
+		data.to_csv(database.split('/')[2].split('.')[0]+str(iteracao)+'.csv', index = False)
+		rotulo = RotulatorModel.Rotulator(database.split('/')[2].split('.')[0]+str(iteracao)+'.csv', d, t , 10, database.split('/')[2].split('.')[0])
 		#print('novo rótulo: ',rotulo.labels)
 		print('nova acurácia: ',np.round(rotulo.results.mean()['Accuracy'],2))
+		print(rotulo.results)
+		print(rotulo.labels)
 
-		if np.round(rotulo.results.mean()['Accuracy'],2) == 1.0: break
+		#if rotulo.results.min()['Accuracy'] == 1.0 : break
 		if np.round(rotulo.results.mean()['Accuracy'],2) == np.round(acc,2): epoc += 1
 		if np.round(rotulo.results.mean()['Accuracy'],2) > np.round(acc,2): epoc = 0
 		if epoc == 5 : break
