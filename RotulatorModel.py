@@ -6,7 +6,7 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 
 import plotingFunctions as pltFunc
-import saving_results as save
+import savingResults as save
 from regressionModel import trainingModels
 from rotulate import calLabel
 
@@ -23,7 +23,8 @@ class Rotulator:
 		models = trainingModels(normalBD, attr_names, title, folds)
 		predictions = models.predictions
 		print("regressions done")
-		# Estrutura de dados para armazenar o erro das predições
+		
+		#Estrutura de dados para armazenar o erro das predições
 		yy = pd.DataFrame(columns= ['Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'])
 		
 		for attr in attr_names:
@@ -67,16 +68,20 @@ class Rotulator:
 		# interPointsByAttr: pontos de interseção do atributo [([pontos], atributo)]
 		limitPoints, intersecByAttrInCluster, interPointsByAttr = self.rangePatition(polynomials, attrRangeByGroup, attr_names)
 		print("limits done")
+		
 		# calcula a relevância dos intervalos
 		# rangeAUC: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'}
 		rangeAUC = self.calAUCRange(attrRangeByGroup, limitPoints, polynomials, d)
 		print("range done")
+		
 		# monta os rótulos
 		# results: {'Cluster', 'Accuracy'}
 		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}
-		self.results, self.labels, rotulation_process = calLabel(rangeAUC, t, self.db)
+		ranged_attr, self.results, self.labels, rotulation_process = calLabel(rangeAUC, t, self.db)
 		print("rotulation done")
 		
+		
+		save.save_table(title, ranged_attr, 'atributos_ordenados_por_acerto.csv')
 		save.save_table(title, models._erros, 'erroRegression.csv')
 		save.save_table(title, models._metrics, 'metricsRegression.csv')
 		save.save_table(title, yy, 'predictions.csv')
@@ -194,13 +199,14 @@ class Rotulator:
 				# seleciona os grupos com domínio da função do erro na faixa
 				clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].values
 
+
 				# calcula o erro estimado para a função de cada grupo selecionado
 				erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 				erroFaixa = erroFaixa.astype({'min_faixa': 'float64', 'max_faixa': 'float64' ,'AUC': 'float64'})
 
 				for k in clusters:
 					erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, self.AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
-				
+
 				# calcula o erro mínimo
 				eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
 				# seleciona os grupos para os quais a faixa será atribuída com base no parâmetro d
@@ -214,8 +220,10 @@ class Rotulator:
 					if not finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].empty:
 						finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'AUC'] += auc[0]	
 						finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'max_faixa'] = max_[0]
+						
 					else:
 						finalrange.loc[finalrange.shape[0],:] = clusterFinal[(clusterFinal['Cluster']==i)].values[0]
+						
 		return finalrange
 	def AUC(self,a, b, func):
 		auc, err = integrate.quad(np.poly1d(func[0]),a, b)
