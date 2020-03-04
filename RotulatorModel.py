@@ -188,11 +188,11 @@ class Rotulator:
 
 		for attr, data in label.groupby(['Atributo']):
 			# seleciona o conjunto de limite do atributo e os polinônios de cada grupo
-
 			limites_ = [i[0] for i in limites if i[1] == attr][0]
 			poli_ = [i[0] for i in poli if i[1] == attr][0]
 
 			for i in range(len(limites_)-1):
+				x_ = np.linspace(limites_[i], limites_[i+1], 11)
 				# delimita a faixa
 				inicio = limites_[i]
 				fim = limites_[i+1]	
