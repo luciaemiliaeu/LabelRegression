@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-import RotulatorModelv2 
+import RotulatorModel
 from sklearn import metrics
 import warnings
 import matplotlib.pyplot as plt
-import savingResults as save
+import saving_results as save
 import gc
 warnings.filterwarnings("ignore")
 
@@ -18,7 +18,7 @@ for dataset in datasets:
 		print(title +' '+ str(i))
 
 		#parâmetros do rotulados: (dataset, d, t, folds, dataset_name)
-		r = RotulatorModelv2.Rotulator(dataset, i*0.1, 0.2, 10, title+str(i))
+		r = RotulatorModel.Rotulator(dataset, i*0.1, 0.2, 10, title)
 		
 		accuracys = r.results['Accuracy'].values
 		n_elemForLabel = []

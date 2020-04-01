@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from matplotlib.patches import Polygon
 import six
 
-import savingResults as save
+import saving_results as save
 
 def render_outcomes_table(out, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
@@ -129,9 +129,10 @@ def plot_Prediction(predictions, dataset_name):
 def plot_Prediction_Mean_Erro(results, dataset_name):
 	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
 	clusters = results['Cluster'].unique()
+
 	for attr, data in results.groupby(['Atributo']):
 		fig, axes = plt.subplots(nrows=clusters.shape[0], ncols=1, figsize = [20,10], dpi = 200)
-		fig.subplots_adjust(wspace=0.5, hspace=0.7, left=0.125, right=0.9, top=0.9, bottom=0.1)
+		fig.subplots_adjust(wspace=0.5, hspace=0.4, left=0.125, right=0.9, top=0.9, bottom=0.1)
 		plt.xlabel('Valor do atributo', fontsize='xx-large')
 		ax = 0
 		

@@ -6,7 +6,7 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 
 import plotingFunctions as pltFunc
-import savingResults as save
+import saving_results as save
 from regressionModel import trainingModels
 from rotulate import calLabel
 
@@ -20,7 +20,7 @@ class Rotulator:
 
 		# Constrói os modelos de regressão e retorna um dataframe com as predições
 		# predisctions: {'index', 'Atributo', 'predict'}
-		models = trainingModels(normalBD, attr_names, title, folds)
+		models = trainingModels(d, normalBD, attr_names, title, folds)
 		predictions = models.predictions
 		print("regressions done")
 		

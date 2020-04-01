@@ -47,7 +47,6 @@ class trainingModels:
 		for train, test in kf.split(normalBD):
 			n_attr = 1
 			for attr in attr_names:		
-				print('d: ', d, ' Fold: ', n_folds, ' Attr: ', n_attr)
 				attr_train = normalBD.loc[train,attr]
 				attr_test = normalBD.loc[test,attr]
 
