@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from matplotlib.patches import Polygon
 import six
 
-import saving_results as save
+import savingResults as save
 
 def render_outcomes_table(out, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
@@ -131,15 +131,16 @@ def plot_Prediction_Mean_Erro(results, dataset_name):
 	clusters = results['Cluster'].unique()
 	for attr, data in results.groupby(['Atributo']):
 		fig, axes = plt.subplots(nrows=clusters.shape[0], ncols=1, figsize = [20,10], dpi = 200)
-		fig.subplots_adjust(wspace=0.5, hspace=0.3, left=0.125, right=0.9, top=0.9, bottom=0.1)
-		plt.xlabel('Valor do atributo')
-		fig.suptitle(attr)
+		fig.subplots_adjust(wspace=0.5, hspace=0.7, left=0.125, right=0.9, top=0.9, bottom=0.1)
+		plt.xlabel('Valor do atributo', fontsize='xx-large')
 		ax = 0
 		
 		for i in clusters:
 			values = data[(data['Cluster']==i)].sort_values(by='Saida')
 			values[['ErroMedio']].plot(kind='bar',ax=axes[ax], xticks = values.Saida)
-			axes[ax].set_title('Grupo '+str(i),fontweight ='medium',  loc='left')
+			axes[ax].tick_params(direction='out', labelsize='x-large')
+			axes[ax].set_title('Grupo '+str(i),fontsize ='xx-large',  loc='left')
+			axes[ax].get_legend().remove()
 			ax += 1
 		save.save_fig(dataset_name,'mean_prediction_erro_'+attr)
 		plt.close('all')
@@ -233,7 +234,6 @@ def plot_Functions(results, polis, dataset_name):
 	# polis : [([funções], attr)]
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
-		plt.suptitle(attr)
 		p = []
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting funções
@@ -251,11 +251,14 @@ def plot_Functions(results, polis, dataset_name):
 				xx = np.linspace(min_, max_)
 				yy = np.polyval(pol[0], xx)
 		
-				plt.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster))
-			plt.legend()
+				plt.plot(xx, yy , label=' Grupo ' +str(cluster))   
+			plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.06), fancybox=True, ncol=3, fontsize='xx-large')
+
 		
 		q = [ np.round(elem,2) for elem in p ]
 		plt.xticks(list(set(q)))
+		plt.rc('xtick', labelsize='x-large')    
+		plt.rc('ytick', labelsize='x-large')
 		save.save_fig(dataset_name,'functions_'+attr)
 		plt.close('all')
 
