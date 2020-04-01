@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 
 class trainingModels:
-	def __init__(self, normalBD, attr_names, title, folds):
+	def __init__(self, d, normalBD, attr_names, title, folds):
 		self._erros = pd.DataFrame(columns=['Atributo', 'mean_squared_error', 'r2'])
 		self._erros = self._erros.astype({'mean_squared_error': 'float64', 'r2': 'float64'})
 		
@@ -14,7 +14,7 @@ class trainingModels:
 		self._metrics = self._metrics.astype({'mean': 'float64', 'sd': 'float64'})
 
 		# predisctions: {'index', 'Atributo', 'predict'}
-		self.predictions, erros = self.training(normalBD, attr_names, folds)
+		self.predictions, erros = self.training(d, normalBD, attr_names, folds)
 		
 		#Cálculo das métricas de avaliação dos modelos de regressão
 		for e in erros:
@@ -33,7 +33,7 @@ class trainingModels:
 			self._metrics.loc[self._metrics.shape[0],:] = [me[0], 'r2', me[1], sd[1]]
 		
 
-	def training(self, normalBD, attr_names, folds):
+	def training(self, d,  normalBD, attr_names, folds):
 		# Cria DataFrames de treino e teste da bd normalizada 
 		# y: atributo de saída
 		kf = KFold(n_splits = folds, shuffle = True, random_state = 2)
@@ -42,9 +42,12 @@ class trainingModels:
 		predict = pd.DataFrame(columns=['index', 'Atributo', 'predict'])
 		predict = predict.astype({'predict': 'float64'})
 
+		n_folds = 1
 		erro_metrics = []
 		for train, test in kf.split(normalBD):
+			n_attr = 1
 			for attr in attr_names:		
+				print('d: ', d, ' Fold: ', n_folds, ' Attr: ', n_attr)
 				attr_train = normalBD.loc[train,attr]
 				attr_test = normalBD.loc[test,attr]
 
@@ -60,5 +63,7 @@ class trainingModels:
 				r2 = model.score(x_test, attr_test)
 				erro = mean_squared_error(attr_test, attr_predicted)
 				erro_metrics.append((attr, erro, r2))
-		
+				
+				n_attr += 1
+			n_folds += 1
 		return predict , erro_metrics
