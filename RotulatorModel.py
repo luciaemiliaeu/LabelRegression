@@ -79,7 +79,8 @@ class Rotulator:
 		# label: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}
 		ranged_attr, self.results, self.labels, rotulation_process = calLabel(rangeAUC, t, self.db)
 		print("rotulation done")
-		
+		print(self.results)
+		print(self.labels)
 		
 		save.save_table(title, ranged_attr, 'atributos_ordenados_por_acerto.csv')
 		save.save_table(title, models._erros, 'erroRegression.csv')
@@ -192,38 +193,42 @@ class Rotulator:
 			poli_ = [i[0] for i in poli if i[1] == attr][0]
 
 			for i in range(len(limites_)-1):
-				x_ = np.linspace(limites_[i], limites_[i+1], 11)
-				# delimita a faixa
-				inicio = limites_[i]
-				fim = limites_[i+1]	
-				# seleciona os grupos com domínio da função do erro na faixa
-				clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].values
-
-
-				# calcula o erro estimado para a função de cada grupo selecionado
-				erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
-				erroFaixa = erroFaixa.astype({'min_faixa': 'float64', 'max_faixa': 'float64' ,'AUC': 'float64'})
-
-				for k in clusters:
-					erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, self.AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
-
-				# calcula o erro mínimo
-				eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
-				# seleciona os grupos para os quais a faixa será atribuída com base no parâmetro d
-				clusterFinal = erroFaixa[(erroFaixa['AUC']) <= eminimo + (lim*eminimo)]
+				min_ = limites_[i]
+				max_ = limites_[i+1]
 				
-				# Verifica se é necessário concatenar faixas
-				for i in clusterFinal['Cluster'].values:
-					min_ = clusterFinal[(clusterFinal['Cluster']==i)]['min_faixa'].values
-					max_ = clusterFinal[(clusterFinal['Cluster']==i)]['max_faixa'].values
-					auc = clusterFinal[(clusterFinal['Cluster']==i)]['AUC'].values
-					if not finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].empty:
-						finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'AUC'] += auc[0]	
-						finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'max_faixa'] = max_[0]
-						
-					else:
-						finalrange.loc[finalrange.shape[0],:] = clusterFinal[(clusterFinal['Cluster']==i)].values[0]
-						
+				x_ = np.linspace(min_, max_, 101)
+				for xx in range(len(x_)-1):
+					# delimita a faixa
+					inicio = x_[xx]
+					fim = x_[xx+1]	
+					# seleciona os grupos com domínio da função do erro na faixa
+					clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].values
+
+
+					# calcula o erro estimado para a função de cada grupo selecionado
+					erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
+					erroFaixa = erroFaixa.astype({'min_faixa': 'float64', 'max_faixa': 'float64' ,'AUC': 'float64'})
+
+					for k in clusters:
+						erroFaixa.loc[erroFaixa.shape[0],:] = [k, attr, inicio, fim, self.AUC(inicio, fim, [x[0] for x in poli_ if x[1]==k])]
+
+					# calcula o erro mínimo
+					eminimo = erroFaixa[(erroFaixa['Atributo']==attr) & (erroFaixa['min_faixa']==inicio) & (erroFaixa['max_faixa']==fim)]['AUC'].min()
+					# seleciona os grupos para os quais a faixa será atribuída com base no parâmetro d
+					clusterFinal = erroFaixa[(erroFaixa['AUC']) <= eminimo + (lim*eminimo)]
+					
+					# Verifica se é necessário concatenar faixas
+					for i in clusterFinal['Cluster'].values:
+						min_ = clusterFinal[(clusterFinal['Cluster']==i)]['min_faixa'].values
+						max_ = clusterFinal[(clusterFinal['Cluster']==i)]['max_faixa'].values
+						auc = clusterFinal[(clusterFinal['Cluster']==i)]['AUC'].values
+						if not finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].empty:
+							finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'AUC'] += auc[0]	
+							finalrange.loc[finalrange[(finalrange['Cluster']==i) & (finalrange['Atributo']==attr) & (finalrange['max_faixa']==min_[0])].index, 'max_faixa'] = max_[0]
+							
+						else:
+							finalrange.loc[finalrange.shape[0],:] = clusterFinal[(clusterFinal['Cluster']==i)].values[0]
+							
 		return finalrange
 	def AUC(self,a, b, func):
 		auc, err = integrate.quad(np.poly1d(func[0]),a, b)

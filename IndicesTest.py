@@ -18,7 +18,7 @@ for dataset in datasets:
 		print(title +' '+ str(i))
 
 		#parâmetros do rotulados: (dataset, d, t, folds, dataset_name)
-		r = RotulatorModel.Rotulator(dataset, i*0.1, 0.2, 10, title)
+		r = RotulatorModel.Rotulator(dataset, i*0.1, 0.2, 10, title+str(i))
 		
 		accuracys = r.results['Accuracy'].values
 		n_elemForLabel = []
