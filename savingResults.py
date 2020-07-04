@@ -5,7 +5,7 @@ import os
 
 def save_table(dataset_name, table, file_name):
 	script_dir = os.path.dirname(__file__)
-	results_dir = os.path.join(script_dir, 'Testes/'+dataset_name+'/')
+	results_dir = os.path.join(script_dir, 'Teste/'+dataset_name+'/')
 	sample_file_name = file_name
 
 	if not os.path.isdir(results_dir):
@@ -16,7 +16,7 @@ def save_table(dataset_name, table, file_name):
 
 def save_fig(dataset_name, figName):
 	script_dir = os.path.dirname(__file__)
-	results_dir = os.path.join(script_dir, 'Testes/'+dataset_name+'/')
+	results_dir = os.path.join(script_dir, 'Teste/'+dataset_name+'/')
 	sample_file_name = figName
 
 	if not os.path.isdir(results_dir):

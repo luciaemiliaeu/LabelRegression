@@ -147,10 +147,9 @@ def plot_Prediction_Mean_Erro(results, dataset_name):
 		plt.close('all')
 
 # Gráfico de linhas com as funções e pontos de erro por grupo
-def plot_Func_and_Points(results, polis, intersec, dataset_name):
+def plot_Func_and_Points(results, polis, dataset_name):
 	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
 	# polis : [([funções], attr)]
-	# intersec : [([pontos], atributo, grupo)]	
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
 		plt.suptitle(attr)
@@ -164,20 +163,17 @@ def plot_Func_and_Points(results, polis, intersec, dataset_name):
 			attr_column = values['Actual'].values
 			erro = values['Erro'].values
 			
-			poli = [p[0] for p in polis if p[1]==attr]
-			pol = [p[0] for p in poli[0] if p[1]==cluster]
-
-			if len(pol)>=1:
+			if cluster in polis[attr]:
+				pol = polis[attr][cluster]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
-				yy = np.polyval(pol[0], xx)
+				yy = np.polyval(pol, xx)
 				verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
 				poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
 
-				inter=[i[0] for i in intersec if i[1]==attr and i[2]==cluster]
-			plt.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster), c= color)
-			plt.legend()
+				plt.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster), c= color)
+				plt.legend()
 		
 		save.save_fig(dataset_name,'functions_and_points_'+attr)
 		plt.close('all')
@@ -199,7 +195,6 @@ def plot_Mean_Points_Erro(results, dataset_name):
 # Gráfico de linha com a função do erro e pontos de erro médio por grupo
 def plot_Func_and_PointsMean(results, polis, dataset_name):
 	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
-	# polis : [([funções], attr)]
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
 		plt.suptitle(attr)
@@ -213,14 +208,12 @@ def plot_Func_and_PointsMean(results, polis, dataset_name):
 			attr_column = values['Saida'].values
 			erro = values['ErroMedio'].values
 			
-			poli = [p[0] for p in polis if p[1]==attr]
-			pol = [p[0] for p in poli[0] if p[1]==cluster]
-
-			if len(pol)>=1:
+			if cluster in polis[attr]:
+				pol = polis[attr][cluster]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
-				yy = np.polyval(pol[0], xx)
+				yy = np.polyval(pol, xx)
 				verts = [(min(attr_column),0), *zip(xx,yy), (max(attr_column),0)]
 				poly = Polygon(verts, facecolor='0.9', edgecolor='0.5')
 
@@ -241,9 +234,8 @@ def plot_Functions(results, polis, dataset_name):
 			attr_column = values['Saida'].values
 			erro = values['ErroMedio'].values
 			
-			pol = polis[attr][cluster]
-			print(pol)
-			if len(pol)>=1:
+			if cluster in polis[attr]:
+				pol = polis[attr][cluster]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				p.append(min_)
@@ -276,17 +268,14 @@ def plot_Intersec(results, polis, intersec, dataset_name):
 			attr_column = values['Saida'].values
 			erro = values['ErroMedio'].values
 			
-			poli = [p[0] for p in polis if p[1]==attr]
-			pol = [p[0] for p in poli[0] if p[1]==cluster]
-
-			if len(pol)>=1:
+			if cluster in polis[attr]:
+				pol = polis[attr][cluster]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
-				yy = np.polyval(pol[0], xx)
+				yy = np.polyval(pol, xx)
 
-				inter=[i[0] for i in intersec if i[1]==attr and i[2]==cluster]
-				for i in inter[0]: p.append(i)
+				inter = intersec[attr][cluster]
 				plt.plot(inter, np.polyval(pol[0], inter), 'o', c='k')				
 				plt.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster))
 			
@@ -312,25 +301,21 @@ def plot_AUC(results, polis, labels, dataset_name):
 			attr_column = values['Saida'].values
 			erro = values['ErroMedio'].values
 			
-			poli = [p[0] for p in polis if p[1]==attr]
-			pol = [p[0] for p in poli[0] if p[1]==cluster]
-
-			if len(pol)>=1:
+			if cluster in polis[attr]:
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
-				yy = np.polyval(pol[0], xx)
+				
+				pol = polis[attr][cluster]
+				yy = np.polyval(pol, xx)
 				c_ = ax.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster))
 				color = c_[0].get_color()
 
-				for i, row in l.iterrows():	
-					a = row['min_faixa']
-					b = row['max_faixa']
-					ix = np.linspace(a,b)
-					iy = np.polyval(pol[0], ix)
-					v = [(a,0), *zip(ix,iy), (b,0)]
-					p = Polygon(v, color=color, alpha=0.3)
-					ax.add_patch(p)
+				l.apply(lambda x: ax.add_patch(Polygon([ (x['min_faixa'],0), 
+					*zip(np.linspace(x['min_faixa'],x['max_faixa']), np.polyval(pol, np.linspace(x['min_faixa'],x['max_faixa']))),
+					 (x['max_faixa'],0)],
+					  color=color, alpha=0.3)), axis=1)
+
 			ax.legend()
 		minimos = [x for x in labels[(labels['Atributo']== attr)].round(2)['min_faixa'].values]
 		maximos = [x for x in labels[(labels['Atributo']== attr)].round(2)['max_faixa'].values]			
@@ -338,7 +323,9 @@ def plot_AUC(results, polis, labels, dataset_name):
 		ax.set_xticklabels(list(set(minimos+maximos)))
 		save.save_fig(dataset_name,'AUC_'+attr )
 		plt.close('all')
-		
+
+
+
 # Gráfio de linha das funções de erro e faixas limitadas
 def plot_Limite_Points(results, polis, intersec, dataset_name):
 	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
@@ -356,18 +343,15 @@ def plot_Limite_Points(results, polis, intersec, dataset_name):
 			attr_column = values.loc[values.index,'Saida'].values
 			erro = values['ErroMedio'].values
 			
-			poli = [p[0] for p in polis if p[1]==attr]
-			pol = [p[0] for p in poli[0] if p[1]==cluster]
- 
-			if len(pol)>=1:
+			if cluster in polis[attr]:
+				pol = polis[attr][cluster]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
-				yy = np.polyval(pol[0], xx)
+				yy = np.polyval(pol, xx)
 				ax.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster))
 			
-		
-		points = [x[0] for x in intersec if x[1]==attr ][0]
+		points = intersec[attr][cluster]
 		for i in points:	
 			ix = [i]* iy.shape[0]
 			ax.plot(ix, iy, '--', color= 'black')

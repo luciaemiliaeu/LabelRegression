@@ -29,18 +29,18 @@ def calLabel(rangeAUC, V, db):
 			acc_max = rotulo_.max()['Accuracy']
 			pro_attr = rotulo_[(rotulo_['Accuracy'] == acc_max)]
 			rotulo_.drop(pro_attr.index, axis=0, inplace=True)
-			print('iteração ', iteracao)
+			#print('iteração ', iteracao)
 			while not pro_attr.empty:
 				# calcula o acerto em todos os grupos para os elementos de maior acuracia
 				max_other_cluster_acc = []
-				print(pro_attr)
+				#print(pro_attr)
 				for index, row in pro_attr.iterrows():
 					acc = acertoRotulo(rc.append(row), db)
 					c_ = [x[1] for x in acc if x[0]==i]
 					other_c = [x[1] for x in acc if x[0]!=i]
 					max_other_cluster_acc.append((index, max(other_c), acc, c_, other_c))
-				print(max_other_cluster_acc)
-				print("\n")
+				#print(max_other_cluster_acc)
+				#print("\n")
 				# ordena os elementos pela representação mínima nos outros grupos
 				max_other_cluster_acc.sort(key=lambda x: x[1])
 				
@@ -61,9 +61,9 @@ def calLabel(rangeAUC, V, db):
 		
 		labels = pd.concat([labels, rc], sort=False)
 		results.loc[results.shape[0],:] = [i, [x[1] for x in acc if x[0] == i][0]]
-		print('dentro da função')
-		print(results)
-		print(labels)
+		#print('dentro da função')
+		#print(results)
+		#print(labels)
 	return accuratedRange, results, labels, rotulation_process
 
 def calAccuracyRange(info, data, classe):
