@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 from matplotlib.patches import Polygon
 import six
 
 import savingResults as save
 
-def render_outcomes_table(out, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
+def render_outcomes_table(dataset_name, out, col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
 					 bbox=[0, 0, 1, 1], header_columns=0,
 					 ax=None, **kwargs):
@@ -32,7 +31,7 @@ def render_outcomes_table(out, dataset_name, col_width=3.0, row_height=0.625, fo
 	save.save_fig(dataset_name,'outcomes_'+dataset_name)
 	plt.close('all')
 
-def render_results_table(results, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
+def render_results_table(dataset_name, results, col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
 					 bbox=[0, 0, 1, 1], header_columns=0,
 					 ax=None, **kwargs):
@@ -57,7 +56,7 @@ def render_results_table(results, dataset_name, col_width=3.0, row_height=0.625,
 	save.save_fig(dataset_name,'labels_accuracy_'+dataset_name)
 	plt.close('all')
 
-def render_labels_table(labels, dataset_name, col_width=3.0, row_height=0.625, font_size=14,
+def render_labels_table(dataset_name, labels,  col_width=3.0, row_height=0.625, font_size=14,
 					 header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
 					 bbox=[0, 0, 1, 1], header_columns=0,
 					 ax=None, **kwargs):
@@ -83,29 +82,8 @@ def render_labels_table(labels, dataset_name, col_width=3.0, row_height=0.625, f
 	save.save_fig(dataset_name,'labels_'+dataset_name)
 	plt.close('all')
 
-def plot_Regression(X, y, svr, attr):
-	plt.close('all')
-	plt.figure(figsize = [20,10], dpi = 200)
-	predicted = svr.predict(X)	
-
-	'''
-	pca = PCA(n_components=1)
-	X_ = pca.fit(X).transform(X)
-	plt.scatter(X_, y)
-	plt.plot(X_, predicted)
-	'''
-	x = np.arange(X.shape[0])
-	plt.plot(x, predicted, lw=2)
-	plt.scatter(x, y, facecolor='none', edgecolor='b', s=50, label='support vectors')
-	plt.scatter(x[np.setdiff1d(np.arange(len(x)), svr.support_)],y[np.setdiff1d(np.arange(len(x)), svr.support_)], facecolor="none", edgecolor="k", s=50, label='other training data')
-
-	plt.legend()
-	plt.title(attr)
-	plt.savefig('regression_'+attr)
-	plt.close('all')
-
 # Gráfico de barras com o valor real, as predições e o erro
-def plot_Prediction(predictions, dataset_name):
+def plot_Prediction( dataset_name, predictions):
 	# predictions : {'Atributo', 'Actual', 'Normalizado', 'Predicted', 'Cluster', 'Erro'}
 	clusters = predictions['Cluster'].unique()
 	for attr, data in predictions.groupby(['Atributo']):
@@ -126,8 +104,8 @@ def plot_Prediction(predictions, dataset_name):
 		plt.close('all')
 
 #Gráfico de barras com o erro médio de predição por ponto
-def plot_Prediction_Mean_Erro(results, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Prediction_Mean_Erro( dataset_name, results):
+	# results : {'Cluster', 'Atributo', 'Actual', 'ErroMedio'}
 	clusters = results['Cluster'].unique()
 
 	for attr, data in results.groupby(['Atributo']):
@@ -137,8 +115,8 @@ def plot_Prediction_Mean_Erro(results, dataset_name):
 		ax = 0
 		
 		for i in clusters:
-			values = data[(data['Cluster']==i)].sort_values(by='Saida')
-			values[['ErroMedio']].plot(kind='bar',ax=axes[ax], xticks = values.Saida)
+			values = data[(data['Cluster']==i)].sort_values(by='Actual')
+			values[['ErroMedio']].plot(kind='bar',ax=axes[ax], xticks = values.Actual)
 			axes[ax].tick_params(direction='out', labelsize='x-large')
 			axes[ax].set_title('Grupo '+str(i),fontsize ='xx-large',  loc='left')
 			axes[ax].get_legend().remove()
@@ -147,8 +125,8 @@ def plot_Prediction_Mean_Erro(results, dataset_name):
 		plt.close('all')
 
 # Gráfico de linhas com as funções e pontos de erro por grupo
-def plot_Func_and_Points(results, polis, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Func_and_Points( dataset_name, results, polis):
+	# results : {'Cluster', 'Atributo', 'Actual',  'ErroMedio'}
 	# polis : [([funções], attr)]
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
@@ -179,33 +157,33 @@ def plot_Func_and_Points(results, polis, dataset_name):
 		plt.close('all')
 
 # Gráfico de pontos dos erros médio por grupo
-def plot_Mean_Points_Erro(results, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Mean_Points_Erro( dataset_name, results):
+	# results : {'Cluster', 'Atributo', 'Actual',  'ErroMedio'}
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
 		plt.suptitle(attr)
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting erro médio 
-			points = values[['Saida', 'ErroMedio']]
-			plt.plot(values['Saida'], values['ErroMedio'], 'o', markersize=7, label='Erros no Grupo '+str(cluster))			
+			points = values[['Actual', 'ErroMedio']]
+			plt.plot(values['Actual'], values['ErroMedio'], 'o', markersize=7, label='Erros no Grupo '+str(cluster))			
 			plt.legend()
 		save.save_fig(dataset_name,'mean_Erro_Points_'+attr)
 		plt.close('all')
 
 # Gráfico de linha com a função do erro e pontos de erro médio por grupo
-def plot_Func_and_PointsMean(results, polis, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Func_and_PointsMean( dataset_name, results, polis):
+	# results : {'Cluster', 'Atributo', 'Actual',  'ErroMedio'}
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
 		plt.suptitle(attr)
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting erro médio 
-			points = values[['Saida', 'ErroMedio']]
-			p = plt.plot(values['Saida'], values['ErroMedio'], 'o', markersize=7, label='Erros no Grupo '+str(cluster))
+			points = values[['Actual', 'ErroMedio']]
+			p = plt.plot(values['Actual'], values['ErroMedio'], 'o', markersize=7, label='Erros no Grupo '+str(cluster))
 			color = p[0].get_color()
 			
 			# Ploting curvas
-			attr_column = values['Saida'].values
+			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
 			if cluster in polis[attr]:
@@ -223,15 +201,15 @@ def plot_Func_and_PointsMean(results, polis, dataset_name):
 		plt.close('all')
 
 #Gáfico de linha das funções de erro por grupo
-def plot_Functions(results, polis, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Functions( dataset_name, results, polis):
+	# results : {'Cluster', 'Atributo', 'Actual',  'ErroMedio'}
 	# polis : [([funções], attr)]
 	for attr, data in results.groupby(['Atributo']):
 		plt.figure(figsize = [20,10], dpi = 200)
 		p = []
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting funções
-			attr_column = values['Saida'].values
+			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
 			if cluster in polis[attr]:
@@ -255,8 +233,8 @@ def plot_Functions(results, polis, dataset_name):
 		plt.close('all')
 
 # Gráfico de linhas das funções de erro e as inteseções destacadas
-def plot_Intersec(results, polis, intersec, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Intersec( dataset_name, results, polis, intersec):
+	# results : {'Cluster', 'Atributo', 'Actual',  'ErroMedio'}
 	# polis : [([funções], attr)]
 	# intersec : [([pontos], atributo, grupo)]	
 	for attr, data in results.groupby(['Atributo']):
@@ -265,7 +243,7 @@ def plot_Intersec(results, polis, intersec, dataset_name):
 		p =[]
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting curvas
-			attr_column = values['Saida'].values
+			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
 			if cluster in polis[attr]:
@@ -287,8 +265,8 @@ def plot_Intersec(results, polis, intersec, dataset_name):
 		plt.close('all')
 
 # Gráfico de linhas das funções de erro e a AUC destacada
-def plot_AUC(results, polis, labels, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_AUC( dataset_name, results, polis, labels):
+	# results : {'Cluster', 'Atributo', 'Actual',  'ErroMedio'}
 	# polis : [([funções], attr)]
 	# labels: {'Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'Accuracy'}	
 	for attr, data in results.groupby(['Atributo']):
@@ -298,7 +276,7 @@ def plot_AUC(results, polis, labels, dataset_name):
 		for cluster, values in data.groupby(['Cluster']):
 			l = labels[(labels['Atributo']== attr) & (labels['Cluster']== cluster)]
 			# Ploting curvas
-			attr_column = values['Saida'].values
+			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
 			if cluster in polis[attr]:
@@ -327,8 +305,8 @@ def plot_AUC(results, polis, labels, dataset_name):
 
 
 # Gráfio de linha das funções de erro e faixas limitadas
-def plot_Limite_Points(results, polis, intersec, dataset_name):
-	# results : {'Cluster', 'Atributo', 'Saida', 'nor_Saida', 'ErroMedio'}
+def plot_Limite_Points( dataset_name, results, polis, intersec):
+	# results : {'Cluster', 'Atributo', 'Saida',  'ErroMedio'}
 	# polis : [([funções], attr)]
 	# intersec : [([pontos], atributo, grupo)]	
 	erro_max = results['ErroMedio'].max()
@@ -340,7 +318,7 @@ def plot_Limite_Points(results, polis, intersec, dataset_name):
 		
 		for cluster, values in data.groupby(['Cluster']):
 			# Ploting curvas
-			attr_column = values.loc[values.index,'Saida'].values
+			attr_column = values.loc[values.index,'Actual'].values
 			erro = values['ErroMedio'].values
 			
 			if cluster in polis[attr]:

@@ -1,18 +1,18 @@
 import numpy as np 
 import pandas as pd
 
-def calLabel(rangeAUC, V, db):
+def Label(rangeAUC, V, db):
 	# Calcula acurácia dos intervalos
 	# accuratedRange: {Cluster, Atributo, min_faixa, min_faixa, Accuracy}
 	accuratedRange = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
 	accuratedRange.drop(['AUC'], axis=1, inplace= True)
 
 
-	labels = pd.DataFrame(columns = accuratedRange.columns)
-	labels = labels.astype({'min_faixa': 'float64', 'min_faixa': 'float64', 'Accuracy': 'float64'})
+	labels = (pd.DataFrame(columns = accuratedRange.columns)
+		.astype({'min_faixa': 'float64', 'min_faixa': 'float64', 'Accuracy': 'float64'}))
 	
-	results = pd.DataFrame( columns = ['Cluster', 'Accuracy'])
-	results = results.astype({'Accuracy': 'float64'})
+	results = (pd.DataFrame( columns = ['Cluster', 'Accuracy'])
+		.astype({'Accuracy': 'float64'}))
 	
 	rotulation_process = pd.DataFrame(columns = ['Cluster', 'iteracao', 'acuracias'])
 
