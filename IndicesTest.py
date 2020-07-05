@@ -19,7 +19,7 @@ for dataset in datasets:
 
 		#parâmetros do rotulados: (dataset, d, t, folds, dataset_name)
 		r = RotulatorModel2.Rotulator(dataset, i*0.1, 0.2, 10, title+str(i))
-		
+		input()
 		accuracys = r.results['Accuracy'].values
 		n_elemForLabel = []
 		for clt, data in r.labels.groupby(['Cluster']):
