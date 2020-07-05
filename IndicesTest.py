@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import RotulatorModel2
+import RotulatorModel
 from sklearn import metrics
 import warnings
 import matplotlib.pyplot as plt
@@ -18,8 +18,8 @@ for dataset in datasets:
 		print(title +' '+ str(i))
 
 		#parâmetros do rotulados: (dataset, d, t, folds, dataset_name)
-		r = RotulatorModel2.Rotulator(dataset, i*0.1, 0.2, 10, title+str(i))
-		input()
+		r = RotulatorModel.Rotulator(dataset, i*0.1, 0.2, 10, title+str(i))
+		
 		accuracys = r.results['Accuracy'].values
 		n_elemForLabel = []
 		for clt, data in r.labels.groupby(['Cluster']):

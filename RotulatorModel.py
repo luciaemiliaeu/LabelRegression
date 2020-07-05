@@ -6,7 +6,7 @@ from scipy.optimize import fsolve
 from sklearn.preprocessing import minmax_scale
 from collections import defaultdict
 
-import plotingFunctions3 as pltFunc
+import plotingFunctions as pltFunc
 import savingResults as save
 from regressionModel import trainingModels
 from rotulate import calLabel
