@@ -36,6 +36,7 @@ class trainingModels:
 	def training(self, normalBD, folds):
 		# Cria DataFrames de treino e teste da bd normalizada 
 		# y: atributo de saída
+		print('Treinando ... ')
 		kf = KFold(n_splits = folds, shuffle = True, random_state = 2)
 		model = SVR(kernel='linear', C=100, gamma='auto')
 		
@@ -46,7 +47,8 @@ class trainingModels:
 		erro_metrics = []
 		for train, test in kf.split(normalBD):
 			n_attr = 1
-			for attr in normalBD.columns:		
+			for attr in normalBD.columns:
+				print('fold ', n_folds, ' attr ', n_attr)			
 				attr_train = normalBD.loc[train,attr]
 				attr_test = normalBD.loc[test,attr]
 

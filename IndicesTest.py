@@ -9,6 +9,7 @@ from RotulatorModel import rangeDelimitation
 from rotulate import Label
 import savingResults as save
 import plotingFunctions as pltFunc
+import os.path
 
 warnings.filterwarnings("ignore")
 
@@ -61,11 +62,8 @@ def calPredictions(db, X, Y, XNormal):
 	
 	return yy, models
 
-def saveInfoDataset(title, models, yy, errorByValue, polynomials):
-	save.save_table(title, models._erros, 'erroRegression.csv')
-	save.save_table(title, models._metrics, 'metricsRegression.csv')
-	save.save_table(title, yy, 'predictions.csv')
-	
+def saveInfoDataset(title, yy, errorByValue, polynomials):
+
 	pltFunc.plot_Prediction(title, yy)
 	pltFunc.plot_Prediction_Mean_Erro(title, errorByValue)
 	pltFunc.plot_Func_and_Points(title, yy, polynomials)
@@ -87,16 +85,26 @@ def saveInfoLabel(title, ranged_attr, relevanteRanges, results, labels, rotulati
 	#pltFunc.plot_Intersec(errorByValue, polynomials, intersecByAttrInCluster, title)
 	#pltFunc.plot_Limite_Points(errorByValue, polynomials, limitPoints, title)
 
-#datasets = ["./databases/iris.csv"]
-datasets = ["./databases/breast_cancer.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
+datasets = ["./databases/parkinson.csv"]
+#datasets = ["./databases/breast_cancer.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 
 for dataset in datasets:
 	title = dataset.split('/')[2].split('.')[0]
 	print(title)
 
 	db, X, Y, XNormal = importBD(dataset)
-	yy, models = calPredictions(db, X, Y, XNormal)
 	
+	if not os.path.isfile('Teste/'+title+'/predictions.csv'):
+		yy, _erros, _metrics = calPredictions(db, X, Y, XNormal)
+		save.save_table(title, _erros, 'erroRegression.csv')
+		save.save_table(title, _metrics, 'metricsRegression.csv')
+		save.save_table(title, yy, 'predictions.csv')
+	
+	else: 
+		yy = pd.read_csv('Teste/'+title+'/predictions.csv')
+		_erros = pd.read_csv('Teste/'+title+'/erroRegression.csv')
+		_metrics = pd.read_csv('Teste/'+title+'/metricsRegression.csv')
+
 	errorByValue = (yy.groupby(['Atributo', 'Cluster', 'Actual'])['Erro'].agg({'ErroMedio': np.average})
 		.reset_index()
 		.astype({'Actual': 'float64', 'ErroMedio': 'float64'}))
@@ -107,7 +115,7 @@ for dataset in datasets:
 	
 	polynomials = polyApro(errorByValue)
 
-	saveInfoDataset(title, models, yy, errorByValue, polynomials)
+	saveInfoDataset(title, yy, errorByValue, polynomials)
 
 	out = pd.DataFrame(columns =['d', 'accuracys', 'n_elemForLabel'])
 	for i in range(11):
