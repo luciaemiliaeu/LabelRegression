@@ -4,6 +4,7 @@ import statistics
 from sklearn.svm import SVR
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
+ from sklearn.neural_network import MLPRegressor
 
 class trainingModels:
 	def __init__(self, normalBD, folds):
@@ -33,6 +34,35 @@ class trainingModels:
 			self._metrics.loc[self._metrics.shape[0],:] = [me[0], 'r2', me[1], sd[1]]
 		
 
+	def training(self, normalBD, folds):
+		# Cria DataFrames de treino e teste da bd normalizada 
+		# y: atributo de saída
+		print('Treinando ... ')
+		model = MLPRegressor(hidden_layer_sizes=(20, 10, 5), max_iter=500)
+		
+		predict = pd.DataFrame(columns=['index', 'Atributo', 'predict'])
+		predict = predict.astype({'predict': 'float64'})
+			
+		erro_metrics = []
+		n_attr = 1
+		for attr in normalBD.columns:
+			print('fold ', n_folds, ' attr ', n_attr)			
+			Y = normalBD[attr]
+			X = normalBD.drop(attr, axis=1)
+			
+			model.fit(X, Y)
+			attr_predicted = model.predict(X)
+
+			for i in X.index: 
+				predict.loc[predict.shape[0],:] = [i, attr, attr_predicted[i]]
+
+			r2 = model.score(X, Y)
+			erro = mean_squared_error(X, Y)
+			erro_metrics.append((attr, erro, r2))
+			
+			n_attr += 1
+		return predict , erro_metrics
+	'''
 	def training(self, normalBD, folds):
 		# Cria DataFrames de treino e teste da bd normalizada 
 		# y: atributo de saída
@@ -68,3 +98,4 @@ class trainingModels:
 				n_attr += 1
 			n_folds += 1
 		return predict , erro_metrics
+	'''
