@@ -65,7 +65,7 @@ def render_labels_table(dataset_name, labels,  col_width=3.0, row_height=0.625, 
 		size = (np.array(labels.shape[::-1]) + np.array([0, 1])) * np.array([col_width, row_height])
 		fig, ax = plt.subplots(figsize = size, dpi = 200)
 		ax.axis('off')
-	labels.drop(['Accuracy'], axis=1, inplace=True)
+	labels.drop(['Precision'], axis=1, inplace=True)
 	labels.loc[:,['min_faixa', 'max_faixa']]=labels[['min_faixa', 'max_faixa']].apply(lambda x: round(x.astype(np.double), 2), axis=1)
 	mpl_table = ax.table(cellText=labels.values, bbox=bbox, colLabels=labels.columns, **kwargs)
 
