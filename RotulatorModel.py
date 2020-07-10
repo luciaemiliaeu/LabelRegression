@@ -10,8 +10,11 @@ def rangeDelimitation(attrRangeByGroup, polynomials, d):
 	# calcula o erro estimado para a função de cada grupo selecionado
 	erroFaixa = pd.DataFrame(columns=['Cluster', 'Atributo', 'min_faixa', 'max_faixa', 'AUC'])
 	erroFaixa = erroFaixa.astype({'min_faixa': 'float64', 'max_faixa': 'float64' ,'AUC': 'float64'})
-
+	
 	for attr, data in attrRangeByGroup.groupby(['Atributo']):
+		#attr = 'tqwt_stdValue_dec_9'
+		#data = attrRangeByGroup[attrRangeByGroup['Atributo'] == 'tqwt_stdValue_dec_9']
+		
 		# seleciona o conjunto de limite do atributo
 		limites = sorted(set(list(data['minValue'].values) + list(data['maxValue'].values)))
 		L = sorted(set(inter_points[attr] + limites))
@@ -21,8 +24,6 @@ def rangeDelimitation(attrRangeByGroup, polynomials, d):
 			inicio = L[i]
 			fim = L[i+1]
 			xzinho = get_groups(inicio, fim, data, d, polynomials[attr], erroFaixa, attr, 'front', False)
-		#print(erroFaixa)
-		
 		# calcula as extensões dos ranges
 		start_points = erroFaixa[(erroFaixa['Atributo'] == attr)]['min_faixa'].values
 		end_points = erroFaixa[(erroFaixa['Atributo'] == attr)]['max_faixa'].values
@@ -32,7 +33,6 @@ def rangeDelimitation(attrRangeByGroup, polynomials, d):
 			# pega os grupos cujas funções passam pelo ponto
 			clusters =list(data[(data['minValue'] < point)
 			          & (data['maxValue'] > point)]['Cluster'].values)
-			
 			if clusters:
 				# pega o início da função mais distante do ponto
 				inicio_ = data[data['Cluster'].isin(clusters)]['minValue'].min()
@@ -51,8 +51,9 @@ def rangeDelimitation(attrRangeByGroup, polynomials, d):
 				for i in range(len(I)-1):
 					if not get_groups(I[i], I[i+1], data, d, polynomials[attr], erroFaixa, attr, 'front', True): 
 						break
+			else:
+				continue
 
-		#print(erroFaixa)
 	return erroFaixa
 
 def intersections( attrRangeByGroup, polynomials):
@@ -72,9 +73,9 @@ def intersections( attrRangeByGroup, polynomials):
 				xx = np.linspace(x_min,x_max, num=5)
 
 				#seleciona os polinômios dos grupos c[0] e c[1]
-				poly1 = polynomials[attr][c[0]]
-				poly2 = polynomials[attr][c[1]]
-				
+				poly1 = polynomials[attr][str(c[0])]
+				poly2 = polynomials[attr][str(c[1])]
+
 				# calcula as interseções em cada intervalo
 				for x0 in xx:
 					r = fsolve(lambda x : np.polyval(poly1, x) - np.polyval(poly2, x),x0, full_output=True, factor = 10) 
@@ -94,7 +95,7 @@ def get_groups( a, b, data, d, polynomials, erroFaixa, attr, sentido, extendendo
 
 	inicio = a
 	fim = b
-
+	
 	# seleciona os grupos com domínio da função do erro na faixa
 	clusters = data[(data['minValue']<= inicio) & (data['maxValue']>=fim)]['Cluster'].values
 	
@@ -102,7 +103,7 @@ def get_groups( a, b, data, d, polynomials, erroFaixa, attr, sentido, extendendo
 		# calcula o erro para cada cluster
 		errors = []
 		for k in clusters:
-			errors.append((k, integrate.quad(np.poly1d(polynomials[k]),a, b)[0]))
+			errors.append((k, integrate.quad(np.poly1d(polynomials[str(k)]),a, b)[0]))
 		errors.sort(key=lambda tup: tup[1], reverse=False)
 		
 		# seleciona os grupos para os quais a faixa será atribuída com base no parâmetro d

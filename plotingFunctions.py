@@ -141,8 +141,8 @@ def plot_Func_and_Points( dataset_name, results, polis):
 			attr_column = values['Actual'].values
 			erro = values['Erro'].values
 			
-			if cluster in polis[attr]:
-				pol = polis[attr][cluster]
+			if str(cluster) in polis[attr]:
+				pol = polis[attr][str(cluster)]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
@@ -186,8 +186,8 @@ def plot_Func_and_PointsMean( dataset_name, results, polis):
 			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
-			if cluster in polis[attr]:
-				pol = polis[attr][cluster]
+			if str(cluster) in polis[attr]:
+				pol = polis[attr][str(cluster)]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
@@ -212,8 +212,8 @@ def plot_Functions( dataset_name, results, polis):
 			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
-			if cluster in polis[attr]:
-				pol = polis[attr][cluster]
+			if str(cluster) in polis[attr]:
+				pol = polis[attr][str(cluster)]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				p.append(min_)
@@ -246,8 +246,8 @@ def plot_Intersec( dataset_name, results, polis, intersec):
 			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
 			
-			if cluster in polis[attr]:
-				pol = polis[attr][cluster]
+			if str(cluster) in polis[attr]:
+				pol = polis[attr][str(cluster)]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
@@ -278,13 +278,12 @@ def plot_AUC( dataset_name, results, polis, labels):
 			# Ploting curvas
 			attr_column = values['Actual'].values
 			erro = values['ErroMedio'].values
-			
-			if cluster in polis[attr]:
+			if str(cluster) in polis[attr]:
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)
 				
-				pol = polis[attr][cluster]
+				pol = polis[attr][str(cluster)]
 				yy = np.polyval(pol, xx)
 				c_ = ax.plot(xx, yy , label='Apro. Poli. Grupo ' +str(cluster))
 				color = c_[0].get_color()
@@ -293,7 +292,6 @@ def plot_AUC( dataset_name, results, polis, labels):
 					*zip(np.linspace(x['min_faixa'],x['max_faixa']), np.polyval(pol, np.linspace(x['min_faixa'],x['max_faixa']))),
 					 (x['max_faixa'],0)],
 					  color=color, alpha=0.3)), axis=1)
-
 			ax.legend()
 		minimos = [x for x in labels[(labels['Atributo']== attr)].round(2)['min_faixa'].values]
 		maximos = [x for x in labels[(labels['Atributo']== attr)].round(2)['max_faixa'].values]			
@@ -321,8 +319,8 @@ def plot_Limite_Points( dataset_name, results, polis, intersec):
 			attr_column = values.loc[values.index,'Actual'].values
 			erro = values['ErroMedio'].values
 			
-			if cluster in polis[attr]:
-				pol = polis[attr][cluster]
+			if str(cluster) in polis[attr]:
+				pol = polis[attr][str(cluster)]
 				min_ = min(attr_column)
 				max_ = max(attr_column)
 				xx = np.linspace(min_, max_)

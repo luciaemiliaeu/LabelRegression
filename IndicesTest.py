@@ -19,7 +19,7 @@ def polyApro(results):
 		d = {}
 		for clt , data in values.groupby(['Cluster']):
 			if data.shape[0]>1:
-				d[clt] = np.polyfit(data['Actual'].to_numpy().astype(float), data['ErroMedio'].to_numpy().astype(float), 2)
+				d[clt] = list(np.polyfit(data['Actual'].to_numpy().astype(float), data['ErroMedio'].to_numpy().astype(float), 2))
 				polynomials[attr] = d
 
 	return polynomials
@@ -60,20 +60,23 @@ def calPredictions(db, X, Y, XNormal):
 		yy = pd.concat([yy, y_])
 	#print(yy.head())
 	
-	return yy, models
+	return yy #, models._erros, models._metrics
 
-def saveInfoDataset(title, yy, errorByValue, polynomials):
-
+def saveInfoDataset(title, yy, errorByValue, polynomials, attrRangeByGroup):
+	save.save_table(title, errorByValue, 'errorByValue.csv' )
+	save.save_table(title, attrRangeByGroup, 'attrRangeByGroup.csv')
+	save.save_json(title, polynomials, 'polynomials')
+	'''
 	pltFunc.plot_Prediction(title, yy)
 	pltFunc.plot_Prediction_Mean_Erro(title, errorByValue)
 	pltFunc.plot_Func_and_Points(title, yy, polynomials)
 	pltFunc.plot_Mean_Points_Erro(title, errorByValue)
 	pltFunc.plot_Func_and_PointsMean(title, errorByValue, polynomials)
 	pltFunc.plot_Functions(title, errorByValue, polynomials)
-
+	'''
 def saveInfoLabel(title, ranged_attr, relevanteRanges, results, labels, rotulation_process, errorByValue, polynomials ):
 	save.save_table(title, ranged_attr, 'atributos_ordenados_por_acerto.csv')
-	save.save_table(title, relevanteRanges, 'range.csv')
+	
 	save.save_table(title, results, 'acuracia.csv')
 	save.save_table(title, labels, 'rotulos.csv')
 	save.save_table(title, rotulation_process, 'rotulos_por_iteracao.csv')
@@ -86,6 +89,7 @@ def saveInfoLabel(title, ranged_attr, relevanteRanges, results, labels, rotulati
 	#pltFunc.plot_Limite_Points(errorByValue, polynomials, limitPoints, title)
 
 datasets = ["./databases/parkinson.csv"]
+#datasets = ["./databases/iris.csv"]
 #datasets = ["./databases/breast_cancer.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 
 for dataset in datasets:
@@ -94,37 +98,63 @@ for dataset in datasets:
 
 	db, X, Y, XNormal = importBD(dataset)
 	
+	is_missing_info = False
 	if not os.path.isfile('Teste/'+title+'/predictions.csv'):
-		yy, _erros, _metrics = calPredictions(db, X, Y, XNormal)
-		save.save_table(title, _erros, 'erroRegression.csv')
-		save.save_table(title, _metrics, 'metricsRegression.csv')
+		yy = calPredictions(db, X, Y, XNormal)
+		#save.save_table(title, _erros, 'erroRegression.csv')
+		#save.save_table(title, _metrics, 'metricsRegression.csv')
 		save.save_table(title, yy, 'predictions.csv')
-	
+		is_missing_info = True
+		print('criou predictions')
 	else: 
 		yy = pd.read_csv('Teste/'+title+'/predictions.csv')
-		_erros = pd.read_csv('Teste/'+title+'/erroRegression.csv')
-		_metrics = pd.read_csv('Teste/'+title+'/metricsRegression.csv')
+		print('pegou predictions')
+		#_erros = pd.read_csv('Teste/'+title+'/erroRegression.csv')
+		#_metrics = pd.read_csv('Teste/'+title+'/metricsRegression.csv')
 
-	errorByValue = (yy.groupby(['Atributo', 'Cluster', 'Actual'])['Erro'].agg({'ErroMedio': np.average})
-		.reset_index()
-		.astype({'Actual': 'float64', 'ErroMedio': 'float64'}))
-		
-	attrRangeByGroup = (yy.groupby(['Atributo', 'Cluster'])['Actual'].agg({'minValue': np.min, 'maxValue': np.max})
-		.reset_index()
-		.astype({'minValue': 'float64', 'maxValue': 'float64'}))
+	if not os.path.isfile('Teste/'+title+'/errorByValue.csv'):
+		errorByValue = (yy.groupby(['Atributo', 'Cluster', 'Actual'])['Erro'].agg({'ErroMedio': np.average})
+			.reset_index()
+			.astype({'Actual': 'float64', 'ErroMedio': 'float64'}))
+		is_missing_info = True
+		print('criou errorByValue')
+	else:
+		errorByValue = pd.read_csv('Teste/'+title+'/errorByValue.csv').astype({'Actual': 'float64', 'ErroMedio': 'float64'})
+		print('pegou errorByValue')
 	
-	polynomials = polyApro(errorByValue)
+	if not os.path.isfile('Teste/'+title+'/attrRangeByGroup.csv'):
+		attrRangeByGroup = (yy.groupby(['Atributo', 'Cluster'])['Actual'].agg({'minValue': np.min, 'maxValue': np.max})
+			.reset_index()
+			.astype({'minValue': 'float64', 'maxValue': 'float64'}))
+		is_missing_info = True
+		print('criou attrRangeByGroup')
+	else:
+		attrRangeByGroup = pd.read_csv('Teste/'+title+'/attrRangeByGroup.csv').astype({'minValue': 'float64', 'maxValue': 'float64'})
+		print('pegou attrRangeByGroup')
 
-	saveInfoDataset(title, yy, errorByValue, polynomials)
+	if not os.path.isfile('Teste/'+title+'/polynomials'):
+		polynomials = polyApro(errorByValue)
+		is_missing_info = True	
+		print('criou polynomials')
+	else: 
+		polynomials = save.get_json(title, 'polynomials')
+		print('pegou polynomials')
 
+	if is_missing_info: saveInfoDataset(title, yy, errorByValue, polynomials, attrRangeByGroup)
+	print('saiu')
 	out = pd.DataFrame(columns =['d', 'accuracys', 'n_elemForLabel'])
 	for i in range(11):
-		print(title +' '+ str(i))
-
-		relevanteRanges = rangeDelimitation(attrRangeByGroup, polynomials, i*0.1)
-		
+		print(title +' '+ str(i)+'-------------------------------------------------------------------')
+		if not os.path.isfile('Teste/'+title+str(i)+'/range.csv'):
+			relevanteRanges = rangeDelimitation(attrRangeByGroup, polynomials, i*0.1)
+			save.save_table(title, relevanteRanges, 'range.csv')
+		else: 
+			relevanteRanges = pd.read_csv('Teste/'+title+str(i)+'/range.csv')
+			
+		print('calculando os rotulos...')
 		ranged_attr, results, labels, rotulation_process = Label(relevanteRanges, 0.2, db)
 		
+		print(str(i), 'Salvando resultados.........................................................')
 		saveInfoLabel(title+str(i), ranged_attr, relevanteRanges, results, labels, rotulation_process, errorByValue, polynomials)
 		
 		out = out.append(pd.Series({'d':np.round(i*0.1,2),

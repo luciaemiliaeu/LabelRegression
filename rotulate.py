@@ -4,9 +4,10 @@ import pandas as pd
 def Label(rangeAUC, V, db):
 	# Calcula acurácia dos intervalos
 	# accuratedRange: {Cluster, Atributo, min_faixa, min_faixa, Accuracy}
-	accuratedRange = rangeAUC.assign(Accuracy=rangeAUC.apply(lambda x: calAccuracyRange(info = x, data=db,classe= x.Cluster), axis=1)).sort_values(by=['Cluster', 'Accuracy'], ascending=[True, False])
-	accuratedRange.drop(['AUC'], axis=1, inplace= True)
-
+	accuratedRange = (rangeAUC
+		.assign(Accuracy = rangeAUC.apply(lambda x: calAccuracyRange(info = x, data = db, classe = x.Cluster), axis=1))
+		.sort_values(by = ['Cluster', 'Accuracy'], ascending = [True, False])
+		.drop(['AUC'], axis=1))
 
 	labels = (pd.DataFrame(columns = accuratedRange.columns)
 		.astype({'min_faixa': 'float64', 'min_faixa': 'float64', 'Accuracy': 'float64'}))
@@ -18,16 +19,14 @@ def Label(rangeAUC, V, db):
 
 	for i in db['classe'].unique():
 		# Seleciona todos os pares atributo intervalo candidatos ao rótulo do grupo
-		rotulo_ = accuratedRange[(accuratedRange['Cluster']==i)]
+		precision_list = accuratedRange[(accuratedRange['Cluster']==i)]
 		rc = pd.DataFrame(columns=rotulo_.columns)
-		idx = rotulo_.index.values.tolist()
 		iteracao = 0
 		# Adiciona atributos ao rótulo enquanto o acerto em outros grupos for maior que V
 		repit = True 
 		while repit:
 			# seleciona os elementos de maior acurácia
-			acc_max = rotulo_.max()['Accuracy']
-			pro_attr = rotulo_[(rotulo_['Accuracy'] == acc_max)]
+			pro_attr = rotulo_[(rotulo_['Accuracy'] == rotulo_.max()['Accuracy'])]
 			rotulo_.drop(pro_attr.index, axis=0, inplace=True)
 			#print('iteração ', iteracao)
 			while not pro_attr.empty:
