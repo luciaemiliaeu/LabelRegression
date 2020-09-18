@@ -116,7 +116,9 @@ def plot_Prediction_Mean_Erro( dataset_name, results):
 		
 		for i in clusters:
 			values = data[(data['Cluster']==i)].sort_values(by='Actual')
-			values[['ErroMedio']].plot(kind='bar',ax=axes[ax], xticks = values.Actual)
+			values[['ErroMedio']].plot(kind='bar',ax=axes[ax], xticks = values.Actual.values, rot=45)
+			axes[ax].set_xticks(np.arange(len(values.Actual.values)))
+			axes[ax].set_xticklabels(values.Actual.values)
 			axes[ax].tick_params(direction='out', labelsize='x-large')
 			axes[ax].set_title('Grupo '+str(i),fontsize ='xx-large',  loc='left')
 			axes[ax].get_legend().remove()

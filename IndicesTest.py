@@ -88,7 +88,7 @@ def saveInfoLabel(title, ranged_attr, relevanteRanges, results, labels, rotulati
 	#pltFunc.plot_Intersec(errorByValue, polynomials, intersecByAttrInCluster, title)
 	#pltFunc.plot_Limite_Points(errorByValue, polynomials, limitPoints, title)
 
-datasets = ["./databases/parkinson.csv"]
+datasets = ["./databases/iris.csv"]
 #datasets = ["./databases/iris.csv"]
 #datasets = ["./databases/breast_cancer.csv","./databases/vidros.csv", "./databases/sementes.csv","./databases/wine.csv" ]
 
@@ -143,7 +143,8 @@ for dataset in datasets:
 	if is_missing_info: saveInfoDataset(title, yy, errorByValue, polynomials, attrRangeByGroup)
 	print('saiu')
 	out = pd.DataFrame(columns =['d', 'accuracys', 'n_elemForLabel'])
-	for i in range(11):
+	
+	for i in range(11, 0, -1):
 		print(title +' '+ str(i)+'-------------------------------------------------------------------')
 		if not os.path.isfile('Teste/'+title+str(i)+'/range.csv'):
 			relevanteRanges = rangeDelimitation(attrRangeByGroup, polynomials, i*0.1)
